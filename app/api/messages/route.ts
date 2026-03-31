@@ -11,16 +11,18 @@ export async function GET(request: NextRequest) {
     if (!chatId) return NextResponse.json({ error: "Chat ID is required" }, { status: 400 });
 
     const messages = await Message.find({ chatId }).sort({ timestamp: 1 }).lean();
-    return NextResponse.json(messages.map((msg) => ({
+    const formattedMessages = messages.map((msg: any) => ({
       id: msg._id.toString(),
       chatId: msg.chatId,
       senderId: msg.senderId,
       senderName: msg.senderName,
       text: msg.text,
-      edited: msg.edited || false,
-      deleted: msg.deleted || false,
+      edited: Boolean(msg.edited),
+      deleted: Boolean(msg.deleted),
       timestamp: msg.timestamp,
-    })));
+    }));
+    console.log('Messages from DB:', formattedMessages.filter((m: any) => m.deleted));
+    return NextResponse.json(formattedMessages);
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
   }
@@ -56,6 +58,7 @@ export async function POST(request: NextRequest) {
       senderName: message.senderName,
       text: message.text,
       edited: false,
+      deleted: false,
       timestamp: message.timestamp,
     });
   } catch (error) {
@@ -93,12 +96,29 @@ export async function DELETE(request: NextRequest) {
     if (!message) return NextResponse.json({ error: "Message not found" }, { status: 404 });
     if (message.senderId !== senderId) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-    message.deleted = true;
-    message.text = "This message has been deleted";
-    await message.save();
+    const originalText = message.text;
+    
+    // Update the message directly
+    const updateResult = await Message.findByIdAndUpdate(
+      messageId,
+      { deleted: true, text: "This message has been deleted" },
+      { new: true }
+    );
+    
+    console.log('Delete update result:', updateResult?.deleted, updateResult?.text);
+    
+    // Update chat's lastMessage if this was the last message
+    const chat = await Chat.findById(message.chatId);
+    if (chat && chat.lastMessage === originalText) {
+      await Chat.findByIdAndUpdate(message.chatId, { 
+        lastMessage: "This message has been deleted",
+        lastMessageTime: new Date()
+      });
+    }
     
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Delete error:', error);
     return NextResponse.json({ error: "Failed to delete message" }, { status: 500 });
   }
 }

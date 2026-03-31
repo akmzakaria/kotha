@@ -57,7 +57,9 @@ export default function ChatPage() {
             setIsFriend(currentProfile.friends?.includes(otherId) || false);
           }
         }
-        setMessages(await getMessages(chatId));
+        const msgs = await getMessages(chatId);
+        console.log('Messages received:', msgs.filter((m: any) => m.deleted));
+        setMessages(msgs);
       } catch (error) {
         console.error("Error fetching chat data:", error);
       }
@@ -78,7 +80,7 @@ export default function ChatPage() {
     const optimisticId = `optimistic-${Date.now()}`;
     const optimisticMessage: Message = {
       id: optimisticId, chatId, senderId: user.uid,
-      senderName: user.displayName || "Anonymous", text, edited: false, timestamp: new Date(),
+      senderName: user.displayName || "Anonymous", text, edited: false, deleted: false, timestamp: new Date(),
     };
     setMessages((prev) => [...prev, optimisticMessage]);
     setMessageText("");
@@ -239,7 +241,10 @@ export default function ChatPage() {
         ) : (
           messages.map((message) => {
             const isOwn = message.senderId === user?.uid;
-            const isDeleted = message.deleted;
+            const isDeleted = message.deleted === true;
+            if (message.text === "This message has been deleted") {
+              console.log('Deleted message check:', { id: message.id, deleted: message.deleted, isDeleted, text: message.text });
+            }
             return (
               <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
                 <div className="relative group max-w-xs md:max-w-md break-words">
@@ -284,7 +289,7 @@ export default function ChatPage() {
                     <>
                       <div 
                         className={`px-4 py-2 rounded-lg transition-opacity break-words ${
-                          isDeleted ? "bg-base-300/50 text-base-content/50 italic" :
+                          isDeleted ? "bg-base-200 text-base-content/60 italic" :
                           isOwn ? "bg-primary text-primary-content" : "bg-base-300 text-base-content"
                         } ${message.id.startsWith("optimistic-") ? "opacity-70" : "opacity-100"}`}
                         onClick={(e) => {
