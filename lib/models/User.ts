@@ -6,16 +6,14 @@ const UserSchema = new mongoose.Schema(
     displayName: { type: String, required: true },
     email: { type: String, required: true },
     profileImage: { type: String, default: "/favicon.ico" },
-    status: {
-      type: String,
-      enum: ["online", "offline", "away"],
-      default: "offline",
-    },
+    bio: { type: String, default: "" },
+    status: { type: String, enum: ["online", "offline", "away"], default: "offline" },
     lastSeen: { type: Date, default: Date.now },
+    friends: { type: [String], default: [] },
+    blocked: { type: [String], default: [] },
+    friendRequests: { type: [String], default: [] }, // incoming request sender uids
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
 
 export default mongoose.models.User || mongoose.model("User", UserSchema);

@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import { ToastProvider } from "@/components/ToastProvider";
+import { ConfirmProvider } from "@/components/ConfirmProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,11 +32,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-base-100 text-base-content`}
       >
-        <AuthProvider>
-          <ProtectedRoute>
-            <LayoutWrapper>{children}</LayoutWrapper>
-          </ProtectedRoute>
-        </AuthProvider>
+        <ToastProvider>
+          <ConfirmProvider>
+            <AuthProvider>
+              <ProtectedRoute>
+                <LayoutWrapper>{children}</LayoutWrapper>
+              </ProtectedRoute>
+            </AuthProvider>
+          </ConfirmProvider>
+        </ToastProvider>
       </body>
     </html>
   );

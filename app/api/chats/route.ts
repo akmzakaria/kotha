@@ -56,6 +56,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if users are friends
+    const currentUser = await User.findOne({ uid: currentUserId });
+    const otherUser = await User.findOne({ uid: otherUserId });
+
+    if (!currentUser || !otherUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if blocked
+    if (currentUser.blocked?.includes(otherUserId) || otherUser.blocked?.includes(currentUserId)) {
+      return NextResponse.json({ error: "Cannot chat with blocked user" }, { status: 403 });
+    }
+
+    // Check if friends
+    if (!currentUser.friends?.includes(otherUserId)) {
+      return NextResponse.json({ error: "You must be friends to chat" }, { status: 403 });
+    }
+
     // Search for existing chat
     const existingChat = await Chat.findOne({
       participants: { $all: [currentUserId, otherUserId] },
@@ -65,8 +83,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ chatId: existingChat._id.toString() });
     }
 
-    // Get current user name
-    const currentUser = await User.findOne({ uid: currentUserId });
     const currentUserName = currentUser?.displayName || "Unknown";
 
     // Create new chat

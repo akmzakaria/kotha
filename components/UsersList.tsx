@@ -2,47 +2,97 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { getAllUsers, getOrCreateChat } from "@/lib/chatService";
+import { getAllUsers, getOrCreateChat, sendFriendRequest, blockUser, getUserProfile, cancelFriendRequest } from "@/lib/chatService";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { UserProfile } from "@/lib/chatService";
+import { useToast } from "@/components/ToastProvider";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 export default function UsersList() {
   const { user } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
+  const { showConfirm } = useConfirm();
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [actionStates, setActionStates] = useState<Record<string, string | undefined>>({});
 
   const fetchUsers = async () => {
     if (!user) return;
-
     setLoading(true);
-    setError(null);
     try {
-      console.log("Fetching users for user:", user.uid);
-      const allUsers = await getAllUsers(user.uid);
-      console.log("Fetched users:", allUsers);
+      const [allUsers, profile] = await Promise.all([
+        getAllUsers(user.uid),
+        getUserProfile(user.uid),
+      ]);
       setUsers(allUsers);
+      setCurrentProfile(profile);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error("Error fetching users:", errorMsg);
-      setError(errorMsg);
+      console.error(err);
     }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, [user]);
+  useEffect(() => { fetchUsers(); }, [user]);
 
   const handleUserClick = async (userId: string, userName: string) => {
+    if (!currentProfile?.friends?.includes(userId)) {
+      showToast("You must be friends to start a chat. Send a friend request first!", "error");
+      return;
+    }
     try {
       const chatId = await getOrCreateChat(user!.uid, userId, userName);
       router.push(`/chat/${chatId}`);
-    } catch (error) {
+    } catch (error: any) {
+      showToast(error.message || "Cannot start chat", "error");
       console.error("Error creating chat:", error);
     }
+  };
+
+  const handleSendRequest = async (e: React.MouseEvent, targetUid: string) => {
+    e.stopPropagation();
+    try {
+      console.log("Sending friend request to:", targetUid);
+      await sendFriendRequest(user!.uid, targetUid);
+      setActionStates((prev) => ({ ...prev, [targetUid]: "sent" }));
+    } catch (error: any) {
+      console.error("Failed to send friend request:", error);
+      showToast(error.message || "Failed to send friend request", "error");
+    }
+  };
+
+  const handleCancelRequest = async (e: React.MouseEvent, targetUid: string) => {
+    e.stopPropagation();
+    showConfirm({
+      title: "Cancel Friend Request",
+      message: "Are you sure you want to cancel this friend request?",
+      confirmText: "Cancel Request",
+      onConfirm: async () => {
+        try {
+          await cancelFriendRequest(user!.uid, targetUid);
+          setActionStates((prev) => ({ ...prev, [targetUid]: undefined }));
+          await fetchUsers();
+        } catch (error: any) {
+          console.error("Failed to cancel request:", error);
+          showToast(error.message || "Failed to cancel request", "error");
+        }
+      }
+    });
+  };
+
+  const handleBlock = async (e: React.MouseEvent, targetUid: string) => {
+    e.stopPropagation();
+    showConfirm({
+      title: "Block User",
+      message: "Are you sure you want to block this user? You won't be able to message each other.",
+      confirmText: "Block",
+      onConfirm: async () => {
+        await blockUser(user!.uid, targetUid);
+        await fetchUsers();
+      }
+    });
   };
 
   const statusColors: Record<string, string> = {
@@ -64,62 +114,64 @@ export default function UsersList() {
     <div className="space-y-2">
       <div className="flex justify-between items-center mb-5">
         <h1 className="text-3xl font-bold">Users</h1>
-        <button
-          onClick={fetchUsers}
-          className="px-4 py-2 bg-primary text-primary-content hover:bg-primary/80 rounded-lg text-sm font-medium transition-colors"
-        >
+        <button onClick={fetchUsers} className="px-4 py-2 bg-primary text-primary-content hover:bg-primary/80 rounded-lg text-sm font-medium transition-colors">
           Refresh
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-900/20 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm">
-          <p className="font-semibold">Error loading users:</p>
-          <p>{error}</p>
-        </div>
-      )}
+      {users.filter((u) => !currentProfile?.blocked?.includes(u.uid)).map((userItem) => {
+        const isFriend = currentProfile?.friends?.includes(userItem.uid);
+        const requestSent = actionStates[userItem.uid] === "sent" || userItem.friendRequests?.includes(currentProfile?.uid || "");
 
-      {users.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-base-content/70 mb-4">No other users available</p>
-          <p className="text-base-content/50 text-sm">
-            Make sure you're connected to Firebase and other users have signed
-            in.
-          </p>
-        </div>
-      ) : (
-        users.map((userItem) => (
+        return (
           <div
             key={userItem.uid}
-            onClick={() => handleUserClick(userItem.uid, userItem.displayName)}
-            className="flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 cursor-pointer items-center rounded-xl p-2 gap-3"
+            className="flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3"
           >
-            <div className="relative shrink-0">
-              <Image
-                width={50}
-                height={50}
-                className="rounded-full"
-                src={userItem.profileImage}
-                alt={userItem.displayName}
-              />
-              <div
-                className={`absolute bottom-0 right-0 w-3 h-3 ${
-                  statusColors[userItem.status] || "bg-gray-500"
-                } rounded-full border-2 border-gray-950`}
-              />
+            <div 
+              className="relative shrink-0 cursor-pointer" 
+              onClick={() => router.push(`/user/${userItem.uid}`)}
+            >
+              <Image width={50} height={50} className="rounded-full" src={userItem.profileImage} alt={userItem.displayName} />
+              <div className={`absolute bottom-0 right-0 w-3 h-3 ${statusColors[userItem.status] || "bg-gray-500"} rounded-full border-2 border-base-100`} />
             </div>
 
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="font-semibold text-base-content truncate">
-                {userItem.displayName}
-              </span>
-              <p className="text-sm text-base-content/70 capitalize">
-                {userItem.status}
-              </p>
+            <div 
+              className="flex flex-col flex-1 min-w-0 cursor-pointer" 
+              onClick={() => handleUserClick(userItem.uid, userItem.displayName)}
+            >
+              <span className="font-semibold text-base-content truncate">{userItem.displayName}</span>
+              <p className="text-sm text-base-content/70 capitalize">{userItem.status}</p>
+            </div>
+
+            <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+              {!isFriend && (
+                requestSent ? (
+                  <button
+                    onClick={(e) => handleCancelRequest(e, userItem.uid)}
+                    className="px-3 py-1 bg-base-300 text-base-content hover:bg-base-100 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    Requested
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => handleSendRequest(e, userItem.uid)}
+                    className="px-3 py-1 bg-primary text-primary-content hover:bg-primary/80 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    Add Friend
+                  </button>
+                )
+              )}
+              <button
+                onClick={(e) => handleBlock(e, userItem.uid)}
+                className="px-3 py-1 bg-base-300 hover:bg-red-500 hover:text-white text-base-content/70 rounded-lg text-xs font-medium transition-colors"
+              >
+                Block
+              </button>
             </div>
           </div>
-        ))
-      )}
+        );
+      })}
     </div>
   );
 }

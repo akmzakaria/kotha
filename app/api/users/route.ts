@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
       profileImage: user.profileImage,
       status: user.status,
       lastSeen: user.lastSeen,
+      friendRequests: user.friendRequests || [],
+      friends: user.friends || [],
+      blocked: user.blocked || [],
     }));
 
     return NextResponse.json(formattedUsers);
@@ -59,6 +62,12 @@ export async function POST(request: NextRequest) {
         profileImage: profileImage || "/favicon.ico",
         status: "online",
         lastSeen: new Date(),
+        $setOnInsert: {
+          friends: [],
+          blocked: [],
+          friendRequests: [],
+          bio: "",
+        },
       },
       { upsert: true, returnDocument: "after" },
     );

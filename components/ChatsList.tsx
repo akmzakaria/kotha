@@ -83,10 +83,12 @@ export default function ChatsList() {
           return (
             <div
               key={chat.id}
-              onClick={() => handleChatClick(chat.id)}
-              className="flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 cursor-pointer items-center rounded-xl p-2 gap-3"
+              className="flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3"
             >
-              <div className="flex flex-col px-2 shrink-0">
+              <div 
+                className="flex flex-col px-2 shrink-0 cursor-pointer" 
+                onClick={(e) => { e.stopPropagation(); router.push(`/user/${otherUserId}`); }}
+              >
                 <Image
                   width={50}
                   height={50}
@@ -96,7 +98,10 @@ export default function ChatsList() {
                 />
               </div>
 
-              <div className="flex flex-col flex-1 min-w-0">
+              <div 
+                className="flex flex-col flex-1 min-w-0 cursor-pointer" 
+                onClick={() => handleChatClick(chat.id)}
+              >
                 <div className="flex justify-between items-center gap-2">
                   <span className="font-semibold text-base-content truncate">
                     {otherUserName}
