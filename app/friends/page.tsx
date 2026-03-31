@@ -36,9 +36,11 @@ export default function FriendsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-2 p-4 md:p-6">
-        <h1 className="text-3xl font-bold mb-5">Friends</h1>
-        <p className="text-base-content/70">Loading...</p>
+         <div className="flex items-center justify-center h-full p-4 md:p-6 h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00665C] mx-auto mb-4"></div>
+          <p className="text-base-content/70">Loading...</p>
+        </div>
       </div>
     );
   }
