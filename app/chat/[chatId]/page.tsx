@@ -115,7 +115,7 @@ export default function ChatPage() {
       onConfirm: async () => {
         try {
           await deleteMessage(msgId, user.uid);
-          setMessages((prev) => prev.filter((m) => m.id !== msgId));
+          setMessages((prev) => prev.map((m) => m.id === msgId ? { ...m, text: "This message has been deleted", deleted: true } : m));
         } catch (e) { console.error(e); }
         setMenuMsgId(null);
       }
@@ -175,9 +175,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-base-100" onClick={() => { setMenuMsgId(null); setShowChatMenu(false); }}>
+    <div className="flex flex-col h-full bg-base-100 w-full max-w-full overflow-x-hidden" onClick={() => { setMenuMsgId(null); setShowChatMenu(false); }}>
       {/* Chat Header */}
-      <div className="bg-base-200 border-b border-base-300 p-4 flex items-center gap-3">
+      <div className="bg-base-200 border-b border-base-300 p-4 flex items-center gap-3 shrink-0">
         <button onClick={() => router.back()} className="p-2 hover:bg-base-300 rounded-full transition-colors md:hidden">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -231,7 +231,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-base-content/50">No messages yet. Start the conversation!</p>
@@ -239,12 +239,13 @@ export default function ChatPage() {
         ) : (
           messages.map((message) => {
             const isOwn = message.senderId === user?.uid;
+            const isDeleted = message.deleted;
             return (
               <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
-                <div className="relative group max-w-xs">
-                  {/* Edit/Delete menu trigger for own messages */}
-                  {isOwn && !message.id.startsWith("optimistic-") && (
-                    <div className="absolute -left-8 top-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                <div className="relative group max-w-xs md:max-w-md break-words">
+                  {/* Desktop: Three-dot menu trigger */}
+                  {isOwn && !message.id.startsWith("optimistic-") && !isDeleted && (
+                    <div className="hidden md:block absolute -left-8 top-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => setMenuMsgId(menuMsgId === message.id ? null : message.id)}
                         className="p-1 hover:bg-base-300 rounded-full">
                         <svg className="w-4 h-4 text-base-content/50" fill="currentColor" viewBox="0 0 24 24">
@@ -252,7 +253,7 @@ export default function ChatPage() {
                         </svg>
                       </button>
                       {menuMsgId === message.id && (
-                        <div className="absolute right-0 bottom-8 bg-base-200 border border-base-300 rounded-lg shadow-lg z-50 min-w-[100px]">
+                        <div className="absolute right-full mr-2 top-0 bg-base-200 border border-base-300 rounded-lg shadow-lg z-50 min-w-[100px]">
                           <button onClick={() => { setEditingId(message.id); setEditText(message.text); setMenuMsgId(null); }}
                             className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-base-content transition-colors">
                             Edit
@@ -267,27 +268,61 @@ export default function ChatPage() {
                   )}
 
                   {editingId === message.id ? (
-                    <div className="flex gap-2 items-center" onClick={(e) => e.stopPropagation()}>
-                      <input
+                    <div className="flex gap-2 items-end" onClick={(e) => e.stopPropagation()}>
+                      <textarea
                         autoFocus
                         value={editText}
                         onChange={(e) => setEditText(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleEdit(message.id); if (e.key === "Escape") setEditingId(null); }}
-                        className="bg-base-300 text-base-content px-3 py-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleEdit(message.id); } if (e.key === "Escape") setEditingId(null); }}
+                        className="bg-base-300 text-base-content px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none min-h-[40px] max-h-[200px]"
+                        rows={2}
                       />
-                      <button onClick={() => handleEdit(message.id)} className="text-primary text-sm font-semibold">Save</button>
-                      <button onClick={() => setEditingId(null)} className="text-base-content/50 text-sm">Cancel</button>
+                      <button onClick={() => handleEdit(message.id)} className="text-primary text-sm font-semibold px-2 py-1">Save</button>
+                      <button onClick={() => setEditingId(null)} className="text-base-content/50 text-sm px-2 py-1">Cancel</button>
                     </div>
                   ) : (
-                    <div className={`px-4 py-2 rounded-lg transition-opacity ${
-                      isOwn ? "bg-primary text-primary-content" : "bg-base-300 text-base-content"
-                    } ${message.id.startsWith("optimistic-") ? "opacity-70" : "opacity-100"}`}>
-                      <p>{message.text}</p>
-                      <p className={`text-xs mt-1 ${isOwn ? "text-primary-content/70" : "text-base-content/50"}`}>
-                        {message.id.startsWith("optimistic-") ? "Sending..." : new Date(message.timestamp).toLocaleTimeString()}
-                        {message.edited && <span className="ml-1">(edited)</span>}
-                      </p>
-                    </div>
+                    <>
+                      <div 
+                        className={`px-4 py-2 rounded-lg transition-opacity break-words ${
+                          isDeleted ? "bg-base-300/50 text-base-content/50 italic" :
+                          isOwn ? "bg-primary text-primary-content" : "bg-base-300 text-base-content"
+                        } ${message.id.startsWith("optimistic-") ? "opacity-70" : "opacity-100"}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isOwn && !message.id.startsWith("optimistic-") && !isDeleted) {
+                            setMenuMsgId(menuMsgId === message.id ? null : message.id);
+                          }
+                        }}
+                      >
+                        <p className="whitespace-pre-wrap break-words">{message.text}</p>
+                        <p className={`text-xs mt-1 ${isOwn && !isDeleted ? "text-primary-content/70" : "text-base-content/50"}`}>
+                          {message.id.startsWith("optimistic-") ? "Sending..." : new Date(message.timestamp).toLocaleTimeString()}
+                          {message.edited && !isDeleted && <span className="ml-1">(edited)</span>}
+                        </p>
+                      </div>
+                      
+                      {/* Mobile: Icon buttons - only show when clicked */}
+                      {isOwn && !message.id.startsWith("optimistic-") && !isDeleted && menuMsgId === message.id && (
+                        <div className="md:hidden absolute -bottom-7 right-0 flex gap-3 mb-3">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setEditingId(message.id); setEditText(message.text); setMenuMsgId(null); }}
+                            className="hover:opacity-70 transition-opacity"
+                          >
+                            <svg className="w-4 h-4 text-base-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDelete(message.id); }}
+                            className="hover:opacity-70 transition-opacity"
+                          >
+                            <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -298,19 +333,25 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSendMessage} className="bg-base-200 border-t border-base-300 p-4 flex gap-3">
-        <input
-          type="text"
+      <form onSubmit={handleSendMessage} className="bg-base-200 border-t border-base-300 p-4 flex gap-3 shrink-0 items-end">
+        <textarea
           value={messageText}
           onChange={(e) => setMessageText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage(e as any);
+            }
+          }}
           placeholder={isFriend ? "Type a message..." : "You must be friends to send messages"}
-          className="flex-1 bg-base-300 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          className="flex-1 bg-base-300 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary min-w-0 resize-none min-h-[44px] max-h-[120px]"
           disabled={sending || !isFriend}
+          rows={1}
         />
         <button
           type="submit"
           disabled={!messageText.trim() || sending || !isFriend}
-          className="bg-primary hover:bg-primary/80 active:bg-primary/60 text-primary-content disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-lg font-semibold transition-colors"
+          className="bg-primary hover:bg-primary/80 active:bg-primary/60 text-primary-content disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-lg font-semibold transition-colors shrink-0 h-[44px]"
         >
           {sending ? "Sending..." : "Send"}
         </button>

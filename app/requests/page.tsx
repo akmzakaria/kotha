@@ -5,12 +5,16 @@ import { useAuth } from "@/app/context/AuthContext";
 import { getUserProfile, getAllUsers, acceptFriendRequest, declineFriendRequest } from "@/lib/chatService";
 import { UserProfile } from "@/lib/chatService";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function RequestsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -50,14 +54,37 @@ export default function RequestsPage() {
   }
 
   const requests = profile?.friendRequests || [];
+  const filteredRequests = requests.filter((fromUid) => {
+    const requester = allUsers.find((u) => u.uid === fromUid);
+    return requester?.displayName.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   return (
     <div className="space-y-2 p-4 md:p-6">
-      <h1 className="text-3xl font-bold mb-5">Friend Requests</h1>
-      {requests.length === 0 ? (
-        <p className="text-base-content/70">No friend requests</p>
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-3xl font-bold">Friend Requests</h1>
+        <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+      </div>
+      
+      {searchOpen && (
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search requests..."
+          className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+          autoFocus
+        />
+      )}
+      
+      {filteredRequests.length === 0 ? (
+        <p className="text-base-content/70">{searchQuery ? "No requests found" : "No friend requests"}</p>
       ) : (
-        requests.map((fromUid) => {
+        filteredRequests.map((fromUid) => {
           const requester = allUsers.find((u) => u.uid === fromUid);
           if (!requester) return null;
           return (

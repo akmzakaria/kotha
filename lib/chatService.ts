@@ -18,6 +18,7 @@ export interface Message {
   senderName: string;
   text: string;
   edited: boolean;
+  deleted: boolean;
   timestamp: Date;
 }
 

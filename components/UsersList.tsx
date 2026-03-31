@@ -18,6 +18,8 @@ export default function UsersList() {
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionStates, setActionStates] = useState<Record<string, string | undefined>>({});
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchUsers = async () => {
     if (!user) return;
@@ -101,6 +103,9 @@ export default function UsersList() {
     offline: "bg-gray-500",
   };
 
+  const filteredUsers = users.filter((u) => !currentProfile?.blocked?.includes(u.uid))
+    .filter((u) => u.displayName.toLowerCase().includes(searchQuery.toLowerCase()));
+
   if (loading) {
     return (
       <div className="space-y-2">
@@ -114,12 +119,30 @@ export default function UsersList() {
     <div className="space-y-2">
       <div className="flex justify-between items-center mb-5">
         <h1 className="text-3xl font-bold">Users</h1>
-        <button onClick={fetchUsers} className="px-4 py-2 bg-primary text-primary-content hover:bg-primary/80 rounded-lg text-sm font-medium transition-colors">
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+          <button onClick={fetchUsers} className="px-4 py-2 bg-primary text-primary-content hover:bg-primary/80 rounded-lg text-sm font-medium transition-colors">
+            Refresh
+          </button>
+        </div>
       </div>
 
-      {users.filter((u) => !currentProfile?.blocked?.includes(u.uid)).map((userItem) => {
+      {searchOpen && (
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search users..."
+          className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+          autoFocus
+        />
+      )}
+
+      {filteredUsers.map((userItem) => {
         const isFriend = currentProfile?.friends?.includes(userItem.uid);
         const requestSent = actionStates[userItem.uid] === "sent" || userItem.friendRequests?.includes(currentProfile?.uid || "");
 

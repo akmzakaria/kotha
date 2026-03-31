@@ -13,6 +13,8 @@ export default function FriendsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -43,14 +45,34 @@ export default function FriendsPage() {
 
   const friendIds = profile?.friends || [];
   const friends = allUsers.filter((u) => friendIds.includes(u.uid));
+  const filteredFriends = friends.filter((f) => f.displayName.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div className="space-y-2 p-4 md:p-6">
-      <h1 className="text-3xl font-bold mb-5">Friends ({friends.length})</h1>
-      {friends.length === 0 ? (
-        <p className="text-base-content/70">No friends yet. Add some from the Users tab!</p>
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-3xl font-bold">Friends ({friends.length})</h1>
+        <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+      </div>
+      
+      {searchOpen && (
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search friends..."
+          className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+          autoFocus
+        />
+      )}
+      
+      {filteredFriends.length === 0 ? (
+        <p className="text-base-content/70">{searchQuery ? "No friends found" : "No friends yet. Add some from the Users tab!"}</p>
       ) : (
-        friends.map((friend) => (
+        filteredFriends.map((friend) => (
           <div
             key={friend.uid}
             className="flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3"

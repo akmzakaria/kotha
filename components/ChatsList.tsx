@@ -13,6 +13,8 @@ export default function ChatsList() {
   const [chats, setChats] = useState<ChatRoom[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -55,6 +57,13 @@ export default function ChatsList() {
     return date.toLocaleDateString();
   };
 
+  const filteredChats = chats.filter((chat) => {
+    const otherUserId = chat.participants.find((id) => id !== user?.uid);
+    const otherUserName = otherUserId ? chat.participantNames[otherUserId] : "";
+    return otherUserName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
   if (loading) {
     return (
       <div className="space-y-2">
@@ -66,11 +75,30 @@ export default function ChatsList() {
 
   return (
     <div className="space-y-2">
-      <h1 className="text-3xl font-bold mb-5">Messages</h1>
-      {chats.length === 0 ? (
-        <p className="text-base-content/70">No chats yet. Start by adding a user!</p>
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-3xl font-bold">Messages</h1>
+        <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+      </div>
+      
+      {searchOpen && (
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search chats..."
+          className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+          autoFocus
+        />
+      )}
+      
+      {filteredChats.length === 0 ? (
+        <p className="text-base-content/70">{searchQuery ? "No chats found" : "No chats yet. Start by adding a user!"}</p>
       ) : (
-        chats.map((chat) => {
+        filteredChats.map((chat) => {
           const otherUserId = chat.participants.find((id) => id !== user?.uid);
           const otherUserName = otherUserId
             ? chat.participantNames[otherUserId]

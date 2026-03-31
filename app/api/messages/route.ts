@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
       senderName: msg.senderName,
       text: msg.text,
       edited: msg.edited || false,
+      deleted: msg.deleted || false,
       timestamp: msg.timestamp,
     })));
   } catch (error) {
@@ -92,7 +93,10 @@ export async function DELETE(request: NextRequest) {
     if (!message) return NextResponse.json({ error: "Message not found" }, { status: 404 });
     if (message.senderId !== senderId) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-    await message.deleteOne();
+    message.deleted = true;
+    message.text = "This message has been deleted";
+    await message.save();
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete message" }, { status: 500 });

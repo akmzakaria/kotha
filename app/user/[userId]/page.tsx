@@ -71,7 +71,6 @@ export default function UserProfilePage() {
           />
           <div className="text-center">
             <h1 className="text-2xl md:text-3xl font-bold text-base-content">{profile.displayName}</h1>
-            <p className="text-base-content/60 text-sm md:text-base">{profile.email}</p>
           </div>
         </div>
 

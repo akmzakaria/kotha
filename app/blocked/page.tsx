@@ -11,6 +11,8 @@ export default function BlockedUsersPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -27,6 +29,11 @@ export default function BlockedUsersPage() {
     setProfile((prev) => prev ? { ...prev, blocked: prev.blocked.filter((id) => id !== targetUid) } : prev);
   };
 
+  const filteredBlocked = (profile?.blocked || []).filter((blockedUid) => {
+    const blockedUser = allUsers.find((u) => u.uid === blockedUid);
+    return blockedUser?.displayName.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -36,35 +43,50 @@ export default function BlockedUsersPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Blocked Users</h1>
+    <div className="space-y-2 p-4 md:p-6">
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-3xl font-bold">Blocked Users</h1>
+        <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+      </div>
       
-      {!profile?.blocked?.length ? (
-        <div className="text-center py-12">
-          <p className="text-base-content/60">No blocked users</p>
-        </div>
+      {searchOpen && (
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search blocked users..."
+          className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+          autoFocus
+        />
+      )}
+      
+      {filteredBlocked.length === 0 ? (
+        <p className="text-base-content/70">{searchQuery ? "No blocked users found" : "No blocked users"}</p>
       ) : (
-        <div className="space-y-2">
-          {profile.blocked.map((blockedUid) => {
-            const blockedUser = allUsers.find((u) => u.uid === blockedUid);
-            return (
-              <div key={blockedUid} className="flex items-center justify-between gap-3 bg-base-200 rounded-xl p-4">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {blockedUser && (
-                    <Image width={48} height={48} className="rounded-full" src={blockedUser.profileImage} alt={blockedUser.displayName} />
-                  )}
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-semibold text-base-content truncate">{blockedUser?.displayName || blockedUid}</span>
-                    <span className="text-sm text-base-content/60 truncate">{blockedUser?.email}</span>
-                  </div>
-                </div>
-                <button onClick={() => handleUnblock(blockedUid)} className="px-4 py-2 bg-primary text-primary-content hover:bg-primary/80 rounded-lg text-sm font-medium transition-colors">
-                  Unblock
-                </button>
+        filteredBlocked.map((blockedUid) => {
+          const blockedUser = allUsers.find((u) => u.uid === blockedUid);
+          if (!blockedUser) return null;
+          return (
+            <div key={blockedUid} className="flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3">
+              <div className="flex flex-col px-2 shrink-0">
+                <Image width={50} height={50} className="rounded-full" src={blockedUser.profileImage} alt={blockedUser.displayName} />
               </div>
-            );
-          })}
-        </div>
+              
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="font-semibold text-base-content truncate">{blockedUser.displayName}</span>
+                <p className="text-sm text-base-content/70 truncate">{blockedUser.email}</p>
+              </div>
+              
+              <button onClick={() => handleUnblock(blockedUid)} className="px-4 py-2 bg-primary text-primary-content hover:bg-primary/80 rounded-lg text-sm font-medium transition-colors shrink-0">
+                Unblock
+              </button>
+            </div>
+          );
+        })
       )}
     </div>
   );

@@ -7,6 +7,7 @@ const MessageSchema = new mongoose.Schema(
     senderName: { type: String, required: true },
     text: { type: String, required: true },
     edited: { type: Boolean, default: false },
+    deleted: { type: Boolean, default: false },
     timestamp: { type: Date, default: Date.now },
   },
   { timestamps: true },
