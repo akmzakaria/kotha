@@ -28,10 +28,10 @@ export default function ProtectedRoute({
   // If loading, show loading spinner
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-base-100">
+      <div className="flex items-center justify-center h-screen bg-[#1A2421]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-base-content/70">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderBottomColor: '#00665C' }}></div>
+          <p className="text-base-content/70">Loading</p>
         </div>
       </div>
     );
@@ -40,10 +40,10 @@ export default function ProtectedRoute({
   // Not logged in - show loading/redirecting message
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen bg-base-100">
+      <div className="flex items-center justify-center h-screen bg-[#1A2421]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-base-content/70">Redirecting...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderBottomColor: '#00665C' }}></div>
+          <p className="text-base-content/70">Loading</p>
         </div>
       </div>
     );
