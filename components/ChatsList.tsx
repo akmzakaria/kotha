@@ -30,9 +30,11 @@ export default function ChatsList() {
           getAllUsers(user.uid),
         ])
         // Sort chats by lastMessageTime descending (newest first)
-        const sortedChats = userChats.sort((a, b) => 
-          new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-        )
+        const sortedChats = [...userChats].sort((a, b) => {
+          const timeA = new Date(a.lastMessageTime).getTime()
+          const timeB = new Date(b.lastMessageTime).getTime()
+          return timeB - timeA
+        })
         setChats(sortedChats)
         setUsers(allUsers)
       } catch (error) {
@@ -69,14 +71,20 @@ export default function ChatsList() {
     return date.toLocaleDateString()
   }
 
-  const filteredChats = chats.filter((chat) => {
-    const otherUserId = chat.participants.find((id) => id !== user?.uid)
-    const otherUserName = otherUserId ? chat.participantNames[otherUserId] : ""
-    return (
-      otherUserName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })
+  const filteredChats = chats
+    .filter((chat) => {
+      const otherUserId = chat.participants.find((id) => id !== user?.uid)
+      const otherUserName = otherUserId ? chat.participantNames[otherUserId] : ""
+      return (
+        otherUserName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    })
+    .sort((a, b) => {
+      const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0
+      const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0
+      return timeB - timeA
+    })
 
   if (loading) {
     return null

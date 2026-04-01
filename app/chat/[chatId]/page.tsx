@@ -36,8 +36,66 @@ export default function ChatPage() {
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
+    const container = messagesContainerRef.current;
+    try {
+      if (container) {
+        const dir = getComputedStyle(container).flexDirection || "";
+        const reversed = dir.includes("reverse");
+        const target = reversed ? 0 : container.scrollHeight;
+        if (typeof container.scrollTo === "function") {
+          try {
+            container.scrollTo({ top: target, behavior });
+            return;
+          } catch (err) {
+            // fallback
+          }
+        }
+        container.scrollTop = target;
+      } else if (typeof window !== "undefined") {
+        try {
+          window.scrollTo({ top: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight), behavior });
+        } catch (err) {
+          window.scrollTo(0, Math.max(document.documentElement.scrollHeight, document.body.scrollHeight));
+        }
+      }
+    } catch (e) {
+      console.error("scrollToBottom error:", e);
+    }
+  };
+
+  const isUserNearBottom = (threshold = 100) => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const dir = getComputedStyle(container).flexDirection || "";
+    const reversed = dir.includes("reverse");
+    if (reversed) {
+      return container.scrollTop <= threshold;
+    }
+    return container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+  };
+
+  const userAtBottomRef = useRef(true);
+
+  const ensureScrollOnContentChange = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    let attempts = 0;
+    const maxAttempts = 8;
+
+    const tryScroll = () => {
+      attempts += 1;
+      if (userAtBottomRef.current) scrollToBottom("auto");
+      if (attempts < maxAttempts) {
+        requestAnimationFrame(() => setTimeout(tryScroll, 100));
+      }
+    };
+
+    tryScroll();
+  };
 
   useEffect(() => {
     if (!chatId || !user) return;
@@ -64,11 +122,9 @@ export default function ChatPage() {
         const msgs = await getMessages(chatId);
         console.log('Messages received:', msgs.filter((m: any) => m.deleted));
         setMessages(msgs);
-        
-        // Scroll to bottom on initial load
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView();
-        }, 100);
+        // Ensure we're at the bottom when opening the chat. Use a safer retry
+        // approach to handle slower production layout changes.
+        ensureScrollOnContentChange();
         
         // Mark chat as read and messages as seen
         await Promise.all([
@@ -101,7 +157,28 @@ export default function ChatPage() {
   }, [chatId, user]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView();
+    if (messages.length === 0) return;
+    // Update whether user is near bottom, then auto-scroll only when appropriate
+    if (isUserNearBottom()) {
+      userAtBottomRef.current = true;
+      // smooth for new incoming messages
+      scrollToBottom("smooth");
+    } else {
+      userAtBottomRef.current = false;
+    }
+    // Also attempt to ensure scrolling on content changes (covers production delays)
+    ensureScrollOnContentChange();
+  }, [messages]);
+
+  // Attach scroll listener to detect user's manual scrolling
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      userAtBottomRef.current = isUserNearBottom(150);
+    };
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
   }, []);
 
   // Poll for typing status
@@ -280,13 +357,13 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6">
+      <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 flex flex-col-reverse space-y-6 space-y-reverse">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-base-content/50">No messages yet. Start the conversation!</p>
           </div>
         ) : (
-          messages.map((message) => {
+          [...messages].reverse().map((message) => {
             const isOwn = message.senderId === user?.uid;
             const isDeleted = message.deleted === true;
             if (message.text === "This message has been deleted") {
@@ -398,11 +475,11 @@ export default function ChatPage() {
           </div>
         )}
         
-        <div ref={messagesEndRef} />
+        
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSendMessage} className="bg-base-200 border-t border-base-300 p-4 flex gap-3 shrink-0 items-end">
+      <form onSubmit={handleSendMessage} className="bg-base-100 p-4 flex gap-3 shrink-0 items-end">
         <textarea
           value={messageText}
           onChange={(e) => {

@@ -23,7 +23,7 @@ export default function LayoutWrapper({
       <div className="flex h-screen overflow-hidden">
         <Navigation />
         <main
-          className={`flex-1 md:ml-16 ${
+          className={`flex-1 min-h-0 md:ml-16 ${
             isChatPage ? "mb-0" : "mb-20"
           } md:mb-0 overflow-hidden flex flex-col`}
         >
