@@ -51,23 +51,22 @@ export default function ChatPage() {
     null,
   )
   const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showScrollDown, setShowScrollDown] = useState(false)
 
   const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
     const container = messagesContainerRef.current
     try {
       if (container) {
-        const dir = getComputedStyle(container).flexDirection || ""
-        const reversed = dir.includes("reverse")
-        const target = reversed ? 0 : container.scrollHeight
         if (typeof container.scrollTo === "function") {
           try {
-            container.scrollTo({ top: target, behavior })
+            container.scrollTo({ top: container.scrollHeight, behavior })
             return
           } catch (err) {
             // fallback
           }
         }
-        container.scrollTop = target
+        container.scrollTop = container.scrollHeight
       } else if (typeof window !== "undefined") {
         try {
           window.scrollTo({
@@ -95,11 +94,6 @@ export default function ChatPage() {
   const isUserNearBottom = (threshold = 100) => {
     const container = messagesContainerRef.current
     if (!container) return true
-    const dir = getComputedStyle(container).flexDirection || ""
-    const reversed = dir.includes("reverse")
-    if (reversed) {
-      return container.scrollTop <= threshold
-    }
     return (
       container.scrollHeight - container.scrollTop - container.clientHeight <=
       threshold
@@ -107,24 +101,8 @@ export default function ChatPage() {
   }
 
   const userAtBottomRef = useRef(true)
-
-  const ensureScrollOnContentChange = () => {
-    const container = messagesContainerRef.current
-    if (!container) return
-
-    let attempts = 0
-    const maxAttempts = 8
-
-    const tryScroll = () => {
-      attempts += 1
-      if (userAtBottomRef.current) scrollToBottom("auto")
-      if (attempts < maxAttempts) {
-        requestAnimationFrame(() => setTimeout(tryScroll, 100))
-      }
-    }
-
-    tryScroll()
-  }
+  const lastMessageIdRef = useRef<string | null>(null);
+  const autoScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!chatId || !user) return
@@ -155,10 +133,12 @@ export default function ChatPage() {
           "Messages received:",
           msgs.filter((m: any) => m.deleted),
         )
-        setMessages(msgs)
-        // Ensure we're at the bottom when opening the chat. Use a safer retry
-        // approach to handle slower production layout changes.
-        ensureScrollOnContentChange()
+        setMessages(msgs);
+        // Remember last message id and attempt an initial scroll (a couple tries
+        // help with production layout timing without forcing scroll on user).
+        lastMessageIdRef.current = msgs.length ? msgs[msgs.length - 1].id : null;
+        setTimeout(() => scrollToBottom("auto"), 50);
+        setTimeout(() => scrollToBottom("auto"), 300);
 
         // Mark chat as read and messages as seen
         await Promise.all([
@@ -191,29 +171,64 @@ export default function ChatPage() {
   }, [chatId, user])
 
   useEffect(() => {
-    if (messages.length === 0) return
-    // Update whether user is near bottom, then auto-scroll only when appropriate
-    if (isUserNearBottom()) {
-      userAtBottomRef.current = true
-      // smooth for new incoming messages
-      scrollToBottom("smooth")
-    } else {
-      userAtBottomRef.current = false
+    if (messages.length === 0) {
+      lastMessageIdRef.current = null;
+      return;
     }
-    // Also attempt to ensure scrolling on content changes (covers production delays)
-    ensureScrollOnContentChange()
-  }, [messages])
+    const lastId = messages[messages.length - 1]?.id || null;
+    const prevLast = lastMessageIdRef.current;
+    const isNewMessage = prevLast !== lastId;
 
-  // Attach scroll listener to detect user's manual scrolling
+    // Update whether user is near bottom
+    userAtBottomRef.current = isUserNearBottom();
+
+    // Only auto-scroll when a new message arrived and the user is already at bottom.
+    // Use a short debounce to avoid racing with the user's scroll event.
+    if (autoScrollTimerRef.current) {
+      clearTimeout(autoScrollTimerRef.current)
+      autoScrollTimerRef.current = null
+    }
+
+    if (isNewMessage) {
+      if (userAtBottomRef.current) {
+        scrollToBottom("smooth")
+      } else {
+        autoScrollTimerRef.current = setTimeout(() => {
+          if (isUserNearBottom()) scrollToBottom("smooth")
+          autoScrollTimerRef.current = null
+        }, 150)
+      }
+    }
+
+    lastMessageIdRef.current = lastId;
+  }, [messages]);
+
+  // Clear any pending timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoScrollTimerRef.current) {
+        clearTimeout(autoScrollTimerRef.current)
+        autoScrollTimerRef.current = null
+      }
+    }
+  }, [])
+
+  // Attach scroll listener to detect user's manual scrolling and whether
+  // the container is scrolled up significantly so we can show a "scroll to latest" button.
   useEffect(() => {
     const container = messagesContainerRef.current
     if (!container) return
     const onScroll = () => {
-      userAtBottomRef.current = isUserNearBottom(150)
+      const scrolledUp = container.scrollTop < container.clientHeight
+      const nearBottom = isUserNearBottom(150)
+      userAtBottomRef.current = nearBottom
+      setShowScrollDown(scrolledUp && !nearBottom && messages.length > 0)
     }
     container.addEventListener("scroll", onScroll, { passive: true })
+    // initialize
+    onScroll()
     return () => container.removeEventListener("scroll", onScroll)
-  }, [])
+  }, [messages])
 
   // Poll for typing status
   useEffect(() => {
@@ -365,7 +380,7 @@ export default function ChatPage() {
 
   return (
     <div
-      className="flex flex-col h-full bg-base-100 w-full max-w-full overflow-x-hidden"
+      className="relative flex flex-col h-full bg-base-100 w-full max-w-full overflow-x-hidden"
       onClick={() => {
         setMenuMsgId(null)
         setShowChatMenu(false)
@@ -466,10 +481,25 @@ export default function ChatPage() {
         </div>
       </div>
 
+      {showScrollDown && (
+        <button
+          onClick={() => {
+            scrollToBottom("smooth")
+            setShowScrollDown(false)
+          }}
+          aria-label="Scroll to latest messages"
+          className="absolute right-4 bottom-20 z-50 bg-primary text-primary-content p-2 rounded-full shadow-lg hover:scale-105 transition-transform"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v8.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 12.586V4a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+        </button>
+      )}
+
       {/* Messages */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 flex flex-col-reverse space-y-6 space-y-reverse"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 flex flex-col space-y-6"
       >
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -478,7 +508,7 @@ export default function ChatPage() {
             </p>
           </div>
         ) : (
-          [...messages].reverse().map((message) => {
+          messages.map((message) => {
             const isOwn = message.senderId === user?.uid
             const isDeleted = message.deleted === true
             if (message.text === "This message has been deleted") {
@@ -703,6 +733,7 @@ export default function ChatPage() {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}

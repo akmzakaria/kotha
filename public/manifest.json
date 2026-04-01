@@ -4,17 +4,17 @@
   "description": "A real-time chat application",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1d232a",
+  "background_color": "#ffffff",
   "theme_color": "#00665C",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/logo.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo.png",
+      "src": "/logo.svg",
       "sizes": "48x48",
       "type": "image/x-icon"
     }
