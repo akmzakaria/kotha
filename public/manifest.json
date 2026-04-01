@@ -1,6 +1,6 @@
 {
-  "name": "Kotha - Chat App",
-  "short_name": "Kotha",
+  "name": "Kothaa - Chat App",
+  "short_name": "Kothaa",
   "description": "A real-time chat application",
   "start_url": "/",
   "display": "standalone",
@@ -8,13 +8,13 @@
   "theme_color": "#00665C",
   "icons": [
     {
-      "src": "/logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/favicon.ico",
+      "src": "/logo.png",
       "sizes": "48x48",
       "type": "image/x-icon"
     }

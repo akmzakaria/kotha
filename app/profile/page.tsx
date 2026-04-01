@@ -21,6 +21,10 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    document.title = "Profile - Kothaa";
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
     Promise.all([
       getUserProfile(user.uid),

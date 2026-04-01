@@ -46,6 +46,7 @@ export const createOrUpdateUserProfile = async (user: FirebaseUser) => {
       displayName: user.displayName || "Anonymous",
       email: user.email,
       profileImage: user.photoURL || "/favicon.ico",
+      emailVerified: user.emailVerified,
     }),
   });
   if (!response.ok) throw new Error("Failed to create/update user profile");

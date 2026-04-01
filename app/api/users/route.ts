@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const users = await User.find({ uid: { $ne: currentUserId } }).lean()
+    const users = await User.find({ 
+      uid: { $ne: currentUserId },
+      emailVerified: true 
+    }).lean()
 
     const formattedUsers = users.map((user) => ({
       uid: user.uid,
@@ -45,7 +48,7 @@ export async function POST(request: NextRequest) {
     await dbConnect()
 
     const body = await request.json()
-    const { uid, displayName, email, profileImage } = body
+    const { uid, displayName, email, profileImage, emailVerified } = body
 
     if (!uid || !displayName || !email) {
       return NextResponse.json(
@@ -60,6 +63,7 @@ export async function POST(request: NextRequest) {
         displayName,
         email,
         profileImage: profileImage || "/favicon.ico",
+        emailVerified: emailVerified !== undefined ? emailVerified : false,
         status: "online",
         lastSeen: new Date(),
         $setOnInsert: {

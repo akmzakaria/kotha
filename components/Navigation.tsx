@@ -5,11 +5,13 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { getUserProfile, getUserChats } from "@/lib/chatService";
+import { useToast } from "@/components/ToastProvider";
 
 export default function Navigation() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { showToast } = useToast();
   const [showMenu, setShowMenu] = React.useState(false);
   const [requestCount, setRequestCount] = React.useState(0);
   const [unreadCount, setUnreadCount] = React.useState(0);
@@ -65,6 +67,7 @@ export default function Navigation() {
   const handleLogout = async () => {
     try {
       await logout();
+      showToast("Signed out successfully!", "success");
       router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);

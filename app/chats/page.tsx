@@ -1,9 +1,10 @@
 import ChatsList from "@/components/ChatsList";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Chats - Kothaa",
+};
 
 export default function ChatsPage() {
-  return (
-    <div className="p-4 md:p-6">
-      <ChatsList />
-    </div>
-  );
+  return <ChatsList />;
 }

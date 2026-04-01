@@ -5,11 +5,13 @@ import { useAuth } from "@/app/context/AuthContext"
 import { createOrUpdateUserProfile } from "@/lib/chatService"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ToastProvider"
 
 export default function LoginPage() {
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } =
     useAuth()
   const router = useRouter()
+  const { showToast } = useToast()
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -24,11 +26,11 @@ export default function LoginPage() {
   }, [user, router])
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme')
+    const savedTheme = localStorage.getItem("theme")
     if (savedTheme) {
-      document.documentElement.setAttribute('data-theme', savedTheme)
+      document.documentElement.setAttribute("data-theme", savedTheme)
     } else {
-      document.documentElement.setAttribute('data-theme', 'dark')
+      document.documentElement.setAttribute("data-theme", "dark")
     }
   }, [])
 
@@ -72,8 +74,9 @@ export default function LoginPage() {
           return
         }
         await signUpWithEmail(email, password, displayName)
-        alert(
+        showToast(
           "Verification email sent! Please check your inbox or spam folder.",
+          "success",
         )
         setEmail("")
         setPassword("")
@@ -81,6 +84,7 @@ export default function LoginPage() {
         setIsSignUp(false)
       } else {
         await signInWithEmail(email, password)
+        showToast("Signed in successfully!", "success")
       }
     } catch (err: any) {
       setError(err.message || "Authentication failed")
@@ -90,6 +94,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle()
+      showToast("Signed in successfully!", "success")
     } catch (error) {
       console.error("Sign in failed:", error)
     }
@@ -103,13 +108,13 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-base-100 py-8">
       <div className="w-full max-w-md mx-auto px-6">
         {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <Image src="/logo.svg" alt="Kotha" width={64} height={64} />
+        <div className="flex justify-center mb-2">
+          <Image src="/logo.png" alt="Kothaa" width={64} height={64} />
         </div>
 
         {/* Title */}
         <h1 className="text-4xl font-bold text-center text-base-content mb-2">
-          Kotha
+          Kothaa
         </h1>
         <p className="text-center text-base-content/60 mb-8">
           {isSignUp ? "Create your account" : "Welcome back"}

@@ -1,161 +1,197 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { useAuth } from "@/app/context/AuthContext";
-import { getUserChats, getAllUsers } from "@/lib/chatService";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { ChatRoom, UserProfile } from "@/lib/chatService";
+import React, { useEffect, useState } from "react"
+import { useAuth } from "@/app/context/AuthContext"
+import { getUserChats, getAllUsers } from "@/lib/chatService"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { ChatRoom, UserProfile } from "@/lib/chatService"
 
 export default function ChatsList() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const [chats, setChats] = useState<ChatRoom[]>([]);
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth()
+  const router = useRouter()
+  const [chats, setChats] = useState<ChatRoom[]>([])
+  const [users, setUsers] = useState<UserProfile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
-    if (!user) return;
+    document.title = "Chats - Kothaa"
+  }, [])
+
+  useEffect(() => {
+    if (!user) return
 
     const fetchData = async () => {
       try {
         const [userChats, allUsers] = await Promise.all([
           getUserChats(user.uid),
           getAllUsers(user.uid),
-        ]);
-        setChats(userChats);
-        setUsers(allUsers);
+        ])
+        setChats(userChats)
+        setUsers(allUsers)
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data:", error)
       }
-      setLoading(false);
-    };
+      setLoading(false)
+    }
 
-    fetchData();
-    
+    fetchData()
+
     // Poll for updates every 2 seconds
-    const interval = setInterval(fetchData, 2000);
-    return () => clearInterval(interval);
-  }, [user]);
+    const interval = setInterval(fetchData, 2000)
+    return () => clearInterval(interval)
+  }, [user])
 
   const handleChatClick = (chatId: string) => {
-    router.push(`/chat/${chatId}`);
-  };
+    router.push(`/chat/${chatId}`)
+  }
 
   const formatTime = (timestamp: Date) => {
-    if (!timestamp) return "";
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMins = Math.floor(diffInMs / 60000);
-    const diffInHours = Math.floor(diffInMs / 3600000);
-    const diffInDays = Math.floor(diffInMs / 86400000);
+    if (!timestamp) return ""
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffInMs = now.getTime() - date.getTime()
+    const diffInMins = Math.floor(diffInMs / 60000)
+    const diffInHours = Math.floor(diffInMs / 3600000)
+    const diffInDays = Math.floor(diffInMs / 86400000)
 
-    if (diffInMins < 1) return "Just now";
-    if (diffInMins < 60) return `${diffInMins}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
+    if (diffInMins < 1) return "Just now"
+    if (diffInMins < 60) return `${diffInMins}m ago`
+    if (diffInHours < 24) return `${diffInHours}h ago`
+    if (diffInDays < 7) return `${diffInDays}d ago`
 
-    return date.toLocaleDateString();
-  };
+    return date.toLocaleDateString()
+  }
 
   const filteredChats = chats.filter((chat) => {
-    const otherUserId = chat.participants.find((id) => id !== user?.uid);
-    const otherUserName = otherUserId ? chat.participantNames[otherUserId] : "";
-    return otherUserName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+    const otherUserId = chat.participants.find((id) => id !== user?.uid)
+    const otherUserName = otherUserId ? chat.participantNames[otherUserId] : ""
+    return (
+      otherUserName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })
 
   if (loading) {
-    return null;
+    return null
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="text-3xl font-bold">Messages</h1>
-        <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
-      </div>
-      
-      {searchOpen && (
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search chats..."
-          className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
-          autoFocus
-        />
-      )}
-      
-      {filteredChats.length === 0 ? (
-        <p className="text-base-content/70">{searchQuery ? "No chats found" : "No chats yet. Start by adding a user!"}</p>
-      ) : (
-        filteredChats.map((chat) => {
-          const otherUserId = chat.participants.find((id) => id !== user?.uid);
-          const otherUserName = otherUserId
-            ? chat.participantNames[otherUserId]
-            : "Unknown";
-          const otherUser = users.find((u) => u.uid === otherUserId);
-          const profileImage =
-            otherUser?.profileImage ||
-            `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUserName}`;
-          const unreadCount = chat.unreadCount?.[user?.uid || ""] || 0;
-          const hasUnread = unreadCount > 0;
+    <div className="h-full flex flex-col">
+      <div className="sticky top-0 bg-base-100 z-10 p-3 md:p-4 pb-2">
+        <div className="flex justify-between items-center mb-3">
+          {/* <Image src="/logo.png" alt="Kothaa" width={64} height={64} /> */}
 
-          return (
-            <div
-              key={chat.id}
-              className={`flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3 ${
-                hasUnread ? "bg-primary/10" : ""
-              }`}
+          <h1 className="text-3xl font-bold">Kothaa</h1>
+          <button
+            onClick={() => setSearchOpen(!searchOpen)}
+            className="p-2 hover:bg-base-200 rounded-full transition-colors"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <div 
-                className="flex flex-col px-2 shrink-0 cursor-pointer" 
-                onClick={(e) => { e.stopPropagation(); router.push(`/user/${otherUserId}`); }}
-              >
-                <Image
-                  width={50}
-                  height={50}
-                  className="rounded-full"
-                  src={profileImage}
-                  alt={otherUserName}
-                />
-              </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </button>
+        </div>
 
-              <div 
-                className="flex flex-col flex-1 min-w-0 cursor-pointer" 
-                onClick={() => handleChatClick(chat.id)}
+        {searchOpen && (
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search chats..."
+            className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+            autoFocus
+          />
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-4 space-y-2">
+        {filteredChats.length === 0 ? (
+          <p className="text-base-content/70">
+            {searchQuery
+              ? "No chats found"
+              : "No chats yet. Start by adding a user!"}
+          </p>
+        ) : (
+          filteredChats.map((chat) => {
+            const otherUserId = chat.participants.find((id) => id !== user?.uid)
+            const otherUserName = otherUserId
+              ? chat.participantNames[otherUserId]
+              : "Unknown"
+            const otherUser = users.find((u) => u.uid === otherUserId)
+            const profileImage =
+              otherUser?.profileImage ||
+              `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUserName}`
+            const unreadCount = chat.unreadCount?.[user?.uid || ""] || 0
+            const hasUnread = unreadCount > 0
+
+            return (
+              <div
+                key={chat.id}
+                className={`flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3 ${
+                  hasUnread ? "bg-primary/10" : ""
+                }`}
               >
-                <div className="flex justify-between items-center gap-2">
-                  <span className={`font-semibold text-base-content truncate ${hasUnread ? "font-bold" : ""}`}>
-                    {otherUserName}
-                  </span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-base-content/50">
-                      {formatTime(chat.lastMessageTime)}
-                    </span>
-                    {hasUnread && (
-                      <span className="bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </div>
+                <div
+                  className="flex flex-col px-2 shrink-0 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push(`/user/${otherUserId}`)
+                  }}
+                >
+                  <Image
+                    width={50}
+                    height={50}
+                    className="rounded-full"
+                    src={profileImage}
+                    alt={otherUserName}
+                  />
                 </div>
-                <p className={`text-sm text-base-content/70 truncate ${hasUnread ? "font-semibold" : ""}`}>
-                  {chat.lastMessage || "No messages yet"}
-                </p>
+
+                <div
+                  className="flex flex-col flex-1 min-w-0 cursor-pointer"
+                  onClick={() => handleChatClick(chat.id)}
+                >
+                  <div className="flex justify-between items-center gap-2">
+                    <span
+                      className={`font-semibold text-base-content truncate ${hasUnread ? "font-bold" : ""}`}
+                    >
+                      {otherUserName}
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-base-content/50">
+                        {formatTime(chat.lastMessageTime)}
+                      </span>
+                      {hasUnread && (
+                        <span className="bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p
+                    className={`text-sm text-base-content/70 truncate ${hasUnread ? "font-semibold" : ""}`}
+                  >
+                    {chat.lastMessage || "No messages yet"}
+                  </p>
+                </div>
               </div>
-            </div>
-          );
-        })
-      )}
+            )
+          })
+        )}
+      </div>
     </div>
-  );
+  )
 }

@@ -1,9 +1,10 @@
 import UsersList from "@/components/UsersList";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Users - Kothaa",
+};
 
 export default function UsersPage() {
-  return (
-    <div className="p-4 md:p-6">
-      <UsersList />
-    </div>
-  );
+  return <UsersList />;
 }

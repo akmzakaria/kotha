@@ -12,6 +12,7 @@ const UserSchema = new mongoose.Schema(
     friends: { type: [String], default: [] },
     blocked: { type: [String], default: [] },
     friendRequests: { type: [String], default: [] }, // incoming request sender uids
+    emailVerified: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

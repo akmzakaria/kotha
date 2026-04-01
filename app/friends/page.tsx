@@ -17,6 +17,10 @@ export default function FriendsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    document.title = "Friends - Kothaa";
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
     Promise.all([getUserProfile(user.uid), getAllUsers(user.uid)]).then(([p, users]) => {
       setProfile(p);
@@ -43,26 +47,30 @@ export default function FriendsPage() {
   const filteredFriends = friends.filter((f) => f.displayName.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className="space-y-2 p-4 md:p-6">
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="text-3xl font-bold">Friends ({friends.length})</h1>
-        <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
+    <div className="h-full overflow-y-auto flex flex-col">
+      <div className="sticky top-0 bg-base-100 z-10 pt-3 md:pt-4 px-4 md:px-6 pb-2">
+        <div className="flex justify-between items-center mb-3">
+          <h1 className="text-3xl font-bold">Friends ({friends.length})</h1>
+          <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+        </div>
+        
+        {searchOpen && (
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search friends..."
+            className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+            autoFocus
+          />
+        )}
       </div>
-      
-      {searchOpen && (
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search friends..."
-          className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
-          autoFocus
-        />
-      )}
+
+      <div className="flex-1 px-4 md:px-6 pb-4 space-y-2">
       
       {filteredFriends.length === 0 ? (
         <p className="text-base-content/70">{searchQuery ? "No friends found" : "No friends yet. Add some from the Users tab!"}</p>
@@ -76,7 +84,15 @@ export default function FriendsPage() {
               className="relative shrink-0 cursor-pointer" 
               onClick={() => router.push(`/user/${friend.uid}`)}
             >
-              <Image width={50} height={50} className="rounded-full" src={friend.profileImage} alt={friend.displayName} />
+              {friend.profileImage && friend.profileImage !== "/favicon.ico" ? (
+                <Image width={50} height={50} className="rounded-full" src={friend.profileImage} alt={friend.displayName} />
+              ) : (
+                <div className="w-[50px] h-[50px] rounded-full bg-base-300 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-base-content" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                  </svg>
+                </div>
+              )}
               <div className={`absolute bottom-0 right-0 w-3 h-3 ${
                 friend.status === "online" ? "bg-green-500" : friend.status === "away" ? "bg-yellow-500" : "bg-gray-500"
               } rounded-full border-2 border-base-100`} />
@@ -92,6 +108,7 @@ export default function FriendsPage() {
           </div>
         ))
       )}
+    </div>
     </div>
   );
 }

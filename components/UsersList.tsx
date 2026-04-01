@@ -21,6 +21,10 @@ export default function UsersList() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  useEffect(() => {
+    document.title = "Users - Kothaa";
+  }, []);
+
   const fetchUsers = async () => {
     if (!user) return;
     setLoading(true);
@@ -111,26 +115,30 @@ export default function UsersList() {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="text-3xl font-bold">Users</h1>
-        <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
+    <div className="h-full flex flex-col">
+      <div className="sticky top-0 bg-base-100 z-10 p-3 md:p-4 pb-2">
+        <div className="flex justify-between items-center mb-3">
+          <h1 className="text-3xl font-bold">Users</h1>
+          <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+        </div>
+
+        {searchOpen && (
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search users..."
+            className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+            autoFocus
+          />
+        )}
       </div>
 
-      {searchOpen && (
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search users..."
-          className="w-full bg-base-200 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
-          autoFocus
-        />
-      )}
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-4 space-y-2">
 
       {filteredUsers.map((userItem) => {
         const isFriend = currentProfile?.friends?.includes(userItem.uid);
@@ -145,7 +153,15 @@ export default function UsersList() {
               className="relative shrink-0 cursor-pointer" 
               onClick={() => router.push(`/user/${userItem.uid}`)}
             >
-              <Image width={50} height={50} className="rounded-full" src={userItem.profileImage} alt={userItem.displayName} />
+              {userItem.profileImage && userItem.profileImage !== "/favicon.ico" ? (
+                <Image width={50} height={50} className="rounded-full" src={userItem.profileImage} alt={userItem.displayName} />
+              ) : (
+                <div className="w-[50px] h-[50px] rounded-full bg-base-300 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-base-content" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                  </svg>
+                </div>
+              )}
               <div className={`absolute bottom-0 right-0 w-3 h-3 ${statusColors[userItem.status] || "bg-gray-500"} rounded-full border-2 border-base-100`} />
             </div>
 
@@ -185,6 +201,7 @@ export default function UsersList() {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
