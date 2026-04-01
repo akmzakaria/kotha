@@ -29,7 +29,11 @@ export default function ChatsList() {
           getUserChats(user.uid),
           getAllUsers(user.uid),
         ])
-        setChats(userChats)
+        // Sort chats by lastMessageTime descending (newest first)
+        const sortedChats = userChats.sort((a, b) => 
+          new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+        )
+        setChats(sortedChats)
         setUsers(allUsers)
       } catch (error) {
         console.error("Error fetching data:", error)
