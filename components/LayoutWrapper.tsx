@@ -1,21 +1,21 @@
-"use client";
+"use client"
 
-import React from "react";
-import { usePathname } from "next/navigation";
-import { AppProvider } from "@/app/context/AppContext";
-import Navigation from "@/components/Navigation";
+import React from "react"
+import { usePathname } from "next/navigation"
+import { AppProvider } from "@/app/context/AppContext"
+import Navigation from "@/components/Navigation"
 
 export default function LayoutWrapper({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  const pathname = usePathname();
-  const isLoginPage = pathname === "/login";
-  const isChatPage = pathname.startsWith("/chat/");
+  const pathname = usePathname()
+  const isLoginPage = pathname === "/login"
+  const isChatPage = pathname.startsWith("/chat/")
 
   if (isLoginPage) {
-    return <>{children}</>;
+    return <>{children}</>
   }
 
   return (
@@ -31,5 +31,5 @@ export default function LayoutWrapper({
         </main>
       </div>
     </AppProvider>
-  );
+  )
 }
