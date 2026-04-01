@@ -76,11 +76,7 @@ export default function ProfilePage() {
   };
 
   if (!profile) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -89,12 +85,20 @@ export default function ProfilePage() {
         {/* Avatar */}
         <div className="flex flex-col items-center gap-4">
           <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-            <Image
-              width={128} height={128}
-              className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-base-300"
-              src={profile.profileImage}
-              alt={profile.displayName}
-            />
+            {profile.profileImage && profile.profileImage !== "/favicon.ico" ? (
+              <Image
+                width={128} height={128}
+                className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-base-300"
+                src={profile.profileImage}
+                alt={profile.displayName}
+              />
+            ) : (
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-base-300 border-4 border-base-300 flex items-center justify-center">
+                <svg className="w-16 h-16 md:w-20 md:h-20 text-base-content" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </div>
+            )}
           <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />

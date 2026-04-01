@@ -34,6 +34,10 @@ export default function ChatsList() {
     };
 
     fetchData();
+    
+    // Poll for updates every 2 seconds
+    const interval = setInterval(fetchData, 2000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const handleChatClick = (chatId: string) => {
@@ -65,14 +69,7 @@ export default function ChatsList() {
   });
 
   if (loading) {
-    return (
-         <div className="flex items-center justify-center h-full p-4 md:p-6 h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00665C] mx-auto mb-4"></div>
-          <p className="text-base-content/70">Loading...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -109,11 +106,15 @@ export default function ChatsList() {
           const profileImage =
             otherUser?.profileImage ||
             `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUserName}`;
+          const unreadCount = chat.unreadCount?.[user?.uid || ""] || 0;
+          const hasUnread = unreadCount > 0;
 
           return (
             <div
               key={chat.id}
-              className="flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3"
+              className={`flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3 ${
+                hasUnread ? "bg-primary/10" : ""
+              }`}
             >
               <div 
                 className="flex flex-col px-2 shrink-0 cursor-pointer" 
@@ -133,14 +134,21 @@ export default function ChatsList() {
                 onClick={() => handleChatClick(chat.id)}
               >
                 <div className="flex justify-between items-center gap-2">
-                  <span className="font-semibold text-base-content truncate">
+                  <span className={`font-semibold text-base-content truncate ${hasUnread ? "font-bold" : ""}`}>
                     {otherUserName}
                   </span>
-                  <span className="text-xs text-base-content/50 shrink-0">
-                    {formatTime(chat.lastMessageTime)}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-base-content/50">
+                      {formatTime(chat.lastMessageTime)}
+                    </span>
+                    {hasUnread && (
+                      <span className="bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="text-sm text-base-content/70 truncate">
+                <p className={`text-sm text-base-content/70 truncate ${hasUnread ? "font-semibold" : ""}`}>
                   {chat.lastMessage || "No messages yet"}
                 </p>
               </div>

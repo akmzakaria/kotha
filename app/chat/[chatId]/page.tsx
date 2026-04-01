@@ -6,6 +6,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import {
   getMessages, sendMessage, getChatDetails, getAllUsers,
   editMessage, deleteMessage, blockUser, unfriendUser, unblockUser, getUserProfile, sendFriendRequest,
+  updateTypingStatus, getTypingUsers, markChatAsRead, markMessagesAsSeen,
 } from "@/lib/chatService";
 import Image from "next/image";
 import { Message } from "@/lib/chatService";
@@ -33,7 +34,10 @@ export default function ChatPage() {
   const [editText, setEditText] = useState("");
   const [menuMsgId, setMenuMsgId] = useState<string | null>(null);
   const [showChatMenu, setShowChatMenu] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!chatId || !user) return;
@@ -60,22 +64,70 @@ export default function ChatPage() {
         const msgs = await getMessages(chatId);
         console.log('Messages received:', msgs.filter((m: any) => m.deleted));
         setMessages(msgs);
+        
+        // Scroll to bottom on initial load
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView();
+        }, 100);
+        
+        // Mark chat as read and messages as seen
+        await Promise.all([
+          markChatAsRead(chatId, user.uid),
+          markMessagesAsSeen(chatId, user.uid)
+        ]);
       } catch (error) {
         console.error("Error fetching chat data:", error);
       }
       setLoading(false);
     };
     fetchChatData();
+
+    // Poll for new messages every 2 seconds
+    const interval = setInterval(async () => {
+      try {
+        const msgs = await getMessages(chatId);
+        setMessages(msgs);
+        // Mark as read and seen on each poll
+        await Promise.all([
+          markChatAsRead(chatId, user.uid),
+          markMessagesAsSeen(chatId, user.uid)
+        ]);
+      } catch (error) {
+        console.error("Error polling messages:", error);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, [chatId, user]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView();
+  }, []);
+
+  // Poll for typing status
+  useEffect(() => {
+    if (!chatId || !user) return;
+    
+    const interval = setInterval(async () => {
+      const typingUsers = await getTypingUsers(chatId, user.uid);
+      setIsTyping(typingUsers.length > 0);
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      // Clear typing status on unmount
+      if (user) updateTypingStatus(chatId, user.uid, false);
+    };
+  }, [chatId, user]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = messageText.trim();
     if (!text || !user) return;
+
+    // Clear typing indicator
+    if (typingTimeout) clearTimeout(typingTimeout);
+    await updateTypingStatus(chatId, user.uid, false);
 
     const optimisticId = `optimistic-${Date.now()}`;
     const optimisticMessage: Message = {
@@ -166,14 +218,7 @@ export default function ChatPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-base-content/70">Loading chat...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -195,7 +240,9 @@ export default function ChatPage() {
         />
         <div className="flex-1">
           <h2 className="font-semibold text-base-content">{otherUserName}</h2>
-          <p className="text-xs text-base-content/70">Online</p>
+          <p className="text-xs text-base-content/70">
+            {isTyping ? "typing..." : "Online"}
+          </p>
         </div>
         {/* Chat options menu */}
         <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -233,7 +280,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-base-content/50">No messages yet. Start the conversation!</p>
@@ -301,8 +348,11 @@ export default function ChatPage() {
                       >
                         <p className="whitespace-pre-wrap break-words">{message.text}</p>
                         <p className={`text-xs mt-1 ${isOwn && !isDeleted ? "text-primary-content/70" : "text-base-content/50"}`}>
-                          {message.id.startsWith("optimistic-") ? "Sending..." : new Date(message.timestamp).toLocaleTimeString()}
+                          {message.id.startsWith("optimistic-") ? "Sending..." : new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           {message.edited && !isDeleted && <span className="ml-1">(edited)</span>}
+                          {isOwn && !isDeleted && message.seenBy?.includes(otherUserId) && (
+                            <span className="ml-2">· Seen</span>
+                          )}
                         </p>
                       </div>
                       
@@ -334,6 +384,20 @@ export default function ChatPage() {
             );
           })
         )}
+        
+        {/* Typing indicator */}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-base-300 px-4 py-3 rounded-lg">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-base-content/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                <div className="w-2 h-2 bg-base-content/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                <div className="w-2 h-2 bg-base-content/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -341,10 +405,29 @@ export default function ChatPage() {
       <form onSubmit={handleSendMessage} className="bg-base-200 border-t border-base-300 p-4 flex gap-3 shrink-0 items-end">
         <textarea
           value={messageText}
-          onChange={(e) => setMessageText(e.target.value)}
+          onChange={(e) => {
+            setMessageText(e.target.value);
+            
+            // Send typing indicator
+            if (user && e.target.value.trim()) {
+              updateTypingStatus(chatId, user.uid, true);
+              
+              // Clear previous timeout
+              if (typingTimeout) clearTimeout(typingTimeout);
+              
+              // Stop typing after 3 seconds of inactivity
+              const timeout = setTimeout(() => {
+                updateTypingStatus(chatId, user.uid, false);
+              }, 3000);
+              setTypingTimeout(timeout);
+            } else if (user) {
+              updateTypingStatus(chatId, user.uid, false);
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
+              if (user) updateTypingStatus(chatId, user.uid, false);
               handleSendMessage(e as any);
             }
           }}

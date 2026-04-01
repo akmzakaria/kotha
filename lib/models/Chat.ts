@@ -6,6 +6,7 @@ const ChatSchema = new mongoose.Schema(
     participantNames: { type: Object, default: {} },
     lastMessage: { type: String, default: "" },
     lastMessageTime: { type: Date, default: Date.now },
+    unreadCount: { type: Object, default: {} }, // { userId: count }
     createdAt: { type: Date, default: Date.now },
   },
   {

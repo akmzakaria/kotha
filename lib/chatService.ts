@@ -8,6 +8,7 @@ export interface ChatRoom {
   participantNames: { [key: string]: string };
   lastMessage: string;
   lastMessageTime: Date;
+  unreadCount?: { [key: string]: number };
   createdAt: Date;
 }
 
@@ -19,6 +20,7 @@ export interface Message {
   text: string;
   edited: boolean;
   deleted: boolean;
+  seenBy?: string[];
   timestamp: Date;
 }
 
@@ -197,4 +199,35 @@ export const updateUserStatus = async (userId: string, status: "online" | "offli
 export const subscribeToMessages = (chatId: string, callback: (messages: Message[]) => void) => {
   getMessages(chatId).then(callback);
   return () => {};
+};
+
+export const updateTypingStatus = async (chatId: string, userId: string, isTyping: boolean) => {
+  await fetch("/api/typing", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chatId, userId, isTyping }),
+  });
+};
+
+export const getTypingUsers = async (chatId: string, currentUserId: string): Promise<string[]> => {
+  const response = await fetch(`/api/typing?chatId=${encodeURIComponent(chatId)}&currentUserId=${encodeURIComponent(currentUserId)}`);
+  if (!response.ok) return [];
+  const data = await response.json();
+  return data.typingUsers || [];
+};
+
+export const markChatAsRead = async (chatId: string, userId: string) => {
+  await fetch(`/api/chats/${encodeURIComponent(chatId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, action: "mark_read" }),
+  });
+};
+
+export const markMessagesAsSeen = async (chatId: string, userId: string) => {
+  await fetch("/api/messages/seen", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chatId, userId }),
+  });
 };

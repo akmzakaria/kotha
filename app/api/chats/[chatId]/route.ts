@@ -34,3 +34,27 @@ export async function GET(
     );
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ chatId: string }> },
+) {
+  try {
+    await dbConnect();
+    const { chatId } = await params;
+    const { userId, action } = await request.json();
+
+    if (action === "mark_read") {
+      await Chat.findByIdAndUpdate(chatId, {
+        [`unreadCount.${userId}`]: 0,
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  } catch (error) {
+    console.error("Error updating chat:", error);
+    return NextResponse.json({ error: "Failed to update chat" }, { status: 500 });
+  }
+}
+

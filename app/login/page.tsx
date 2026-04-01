@@ -1,64 +1,182 @@
-"use client";
+"use client"
 
-import React, { useEffect } from "react";
-import { useAuth } from "@/app/context/AuthContext";
-import { createOrUpdateUserProfile } from "@/lib/chatService";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react"
+import { useAuth } from "@/app/context/AuthContext"
+import { createOrUpdateUserProfile } from "@/lib/chatService"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
-  const { user, signInWithGoogle, loading } = useAuth();
-  const router = useRouter();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } =
+    useAuth()
+  const router = useRouter()
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [displayName, setDisplayName] = useState("")
+  const [error, setError] = useState("")
 
   useEffect(() => {
-    if (user) {
-      createOrUpdateUserProfile(user);
-      router.push("/");
+    if (user && user.emailVerified) {
+      createOrUpdateUserProfile(user)
+      router.push("/")
     }
-  }, [user, router]);
+  }, [user, router])
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme)
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark')
+    }
+  }, [])
+
+  const validatePassword = (pwd: string) => {
+    if (pwd.length < 8) return "Password must be at least 8 characters"
+    if (!/[A-Z]/.test(pwd))
+      return "Password must contain at least one uppercase letter"
+    if (!/[a-z]/.test(pwd))
+      return "Password must contain at least one lowercase letter"
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd))
+      return "Password must contain at least one special character"
+    return null
+  }
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) return "Please enter a valid email address"
+    return null
+  }
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+
+    const emailError = validateEmail(email)
+    if (emailError) {
+      setError(emailError)
+      return
+    }
+
+    const pwdError = validatePassword(password)
+    if (pwdError) {
+      setError(pwdError)
+      return
+    }
+
+    try {
+      if (isSignUp) {
+        if (!displayName.trim()) {
+          setError("Display name is required")
+          return
+        }
+        await signUpWithEmail(email, password, displayName)
+        alert(
+          "Verification email sent! Please check your inbox or spam folder.",
+        )
+        setEmail("")
+        setPassword("")
+        setDisplayName("")
+        setIsSignUp(false)
+      } else {
+        await signInWithEmail(email, password)
+      }
+    } catch (err: any) {
+      setError(err.message || "Authentication failed")
+    }
+  }
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle();
+      await signInWithGoogle()
     } catch (error) {
-      console.error("Sign in failed:", error);
+      console.error("Sign in failed:", error)
     }
-  };
+  }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-base-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-base-content/70">Loading...</p>
-        </div>
-      </div>
-    );
+    return null
   }
 
   return (
-    <div className="flex items-center justify-center h-screen bg-base-100">
+    <div className="flex items-center justify-center min-h-screen bg-base-100 py-8">
       <div className="w-full max-w-md mx-auto px-6">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-3xl font-bold text-primary-content">K</span>
-          </div>
+          <Image src="/logo.svg" alt="Kotha" width={64} height={64} />
         </div>
 
         {/* Title */}
         <h1 className="text-4xl font-bold text-center text-base-content mb-2">
           Kotha
         </h1>
-        <p className="text-center text-base-content/60 mb-12">
-          Connect with friends and family
+        <p className="text-center text-base-content/60 mb-8">
+          {isSignUp ? "Create your account" : "Welcome back"}
         </p>
+
+        {/* Email/Password Form */}
+        <form onSubmit={handleEmailAuth} className="space-y-4 mb-4">
+          {isSignUp && (
+            <input
+              type="text"
+              placeholder="Display Name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full bg-base-200 text-base-content px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            />
+          )}
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-base-200 text-base-content px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-base-200 text-base-content px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            required
+          />
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <button
+            type="submit"
+            className="w-full bg-primary hover:bg-primary/80 text-primary-content font-semibold py-3 px-4 rounded-lg transition-colors"
+          >
+            {isSignUp ? "Sign Up" : "Sign In"}
+          </button>
+        </form>
+
+        {/* Toggle Sign Up/Sign In */}
+        <button
+          onClick={() => {
+            setIsSignUp(!isSignUp)
+            setError("")
+          }}
+          className="w-full text-center text-primary hover:underline mb-4"
+        >
+          {isSignUp
+            ? "Already have an account? Sign In"
+            : "Don't have an account? Sign Up"}
+        </button>
+
+        {/* Divider */}
+        <div className="flex items-center gap-4 my-6">
+          <div className="flex-1 border-t border-base-300"></div>
+          <span className="text-base-content/50 text-sm">OR</span>
+          <div className="flex-1 border-t border-base-300"></div>
+        </div>
 
         {/* Google Sign In Button */}
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full bg-white hover:bg-gray-100 active:bg-gray-200 transition-all duration-200 text-gray-900 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-3 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-base-200 hover:bg-base-300 active:bg-base-100 transition-all duration-200 text-base-content font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-base-300"
         >
           <svg
             className="w-5 h-5"
@@ -92,5 +210,5 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
-  );
+  )
 }

@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
       text: msg.text,
       edited: Boolean(msg.edited),
       deleted: Boolean(msg.deleted),
+      seenBy: msg.seenBy || [],
       timestamp: msg.timestamp,
     }));
     console.log('Messages from DB:', formattedMessages.filter((m: any) => m.deleted));
@@ -49,7 +50,13 @@ export async function POST(request: NextRequest) {
     }
 
     const message = await Message.create({ chatId, senderId, senderName, text, timestamp: new Date() });
-    await Chat.findByIdAndUpdate(chatId, { lastMessage: text, lastMessageTime: new Date() });
+    
+    // Increment unread count for receiver
+    const updateObj: any = { lastMessage: text, lastMessageTime: new Date() };
+    if (receiverId) {
+      updateObj[`unreadCount.${receiverId}`] = (chat.unreadCount?.[receiverId] || 0) + 1;
+    }
+    await Chat.findByIdAndUpdate(chatId, updateObj);
 
     return NextResponse.json({
       id: message._id.toString(),

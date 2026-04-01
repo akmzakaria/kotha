@@ -1,22 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import User from "@/lib/models/User";
+import { NextRequest, NextResponse } from "next/server"
+import dbConnect from "@/lib/mongodb"
+import User from "@/lib/models/User"
 
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
+    await dbConnect()
 
-    const { searchParams } = new URL(request.url);
-    const currentUserId = searchParams.get("currentUserId");
+    const { searchParams } = new URL(request.url)
+    const currentUserId = searchParams.get("currentUserId")
 
     if (!currentUserId) {
       return NextResponse.json(
         { error: "Current user ID is required" },
         { status: 400 },
-      );
+      )
     }
 
-    const users = await User.find({ uid: { $ne: currentUserId } }).lean();
+    const users = await User.find({ uid: { $ne: currentUserId } }).lean()
 
     const formattedUsers = users.map((user) => ({
       uid: user.uid,
@@ -28,30 +28,30 @@ export async function GET(request: NextRequest) {
       friendRequests: user.friendRequests || [],
       friends: user.friends || [],
       blocked: user.blocked || [],
-    }));
+    }))
 
-    return NextResponse.json(formattedUsers);
+    return NextResponse.json(formattedUsers)
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error("Error fetching users:", error)
     return NextResponse.json(
       { error: "Failed to fetch users" },
       { status: 500 },
-    );
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
+    await dbConnect()
 
-    const body = await request.json();
-    const { uid, displayName, email, profileImage } = body;
+    const body = await request.json()
+    const { uid, displayName, email, profileImage } = body
 
     if (!uid || !displayName || !email) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
-      );
+      )
     }
 
     const user = await User.findOneAndUpdate(
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         },
       },
       { upsert: true, returnDocument: "after" },
-    );
+    )
 
     return NextResponse.json({
       uid: user.uid,
@@ -79,12 +79,12 @@ export async function POST(request: NextRequest) {
       profileImage: user.profileImage,
       status: user.status,
       lastSeen: user.lastSeen,
-    });
+    })
   } catch (error) {
-    console.error("Error creating/updating user:", error);
+    console.error("Error creating/updating user:", error)
     return NextResponse.json(
       { error: "Failed to create/update user" },
       { status: 500 },
-    );
+    )
   }
 }

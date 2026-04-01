@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       participantNames: chat.participantNames || {},
       lastMessage: chat.lastMessage,
       lastMessageTime: chat.lastMessageTime,
+      unreadCount: chat.unreadCount || {},
       createdAt: chat.createdAt,
     }));
 
