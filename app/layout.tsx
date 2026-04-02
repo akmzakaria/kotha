@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   title: "Kothaa - Chat App",
   description: "A WhatsApp-like chat application",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

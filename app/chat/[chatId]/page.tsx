@@ -720,19 +720,19 @@ export default function ChatPage() {
 
         {/* Typing indicator */}
         {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-base-300 px-4 py-3 rounded-lg">
-              <div className="flex gap-1">
+          <div className="flex justify-start mb-4">
+            <div className="bg-base-300 px-2 py-2 md:px-4 md:py-3 rounded-lg">
+              <div className="flex gap-1 md:gap-1.5">
                 <div
-                  className="w-2 h-2 bg-base-content/50 rounded-full animate-bounce"
+                  className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 bg-base-content/60 rounded-full animate-bounce"
                   style={{ animationDelay: "0ms" }}
                 ></div>
                 <div
-                  className="w-2 h-2 bg-base-content/50 rounded-full animate-bounce"
+                  className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 bg-base-content/60 rounded-full animate-bounce"
                   style={{ animationDelay: "150ms" }}
                 ></div>
                 <div
-                  className="w-2 h-2 bg-base-content/50 rounded-full animate-bounce"
+                  className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 bg-base-content/60 rounded-full animate-bounce"
                   style={{ animationDelay: "300ms" }}
                 ></div>
               </div>

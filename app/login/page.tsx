@@ -109,7 +109,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md mx-auto px-6">
         {/* Logo */}
         <div className="flex justify-center mb-2">
-          <Image src="/logo.png" alt="Kothaa" width={64} height={64} />
+          <Image src="/Kothaa_icon.png" alt="Kothaa" width={64} height={64} />
         </div>
 
         {/* Title */}

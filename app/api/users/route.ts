@@ -18,11 +18,25 @@ export async function GET(request: NextRequest) {
 
     const currentUser = await User.findOne({ uid: currentUserId }).lean()
     
-    const users = await User.find({ 
+    const restrictedEmail1 = process.env.RESTRICTED_EMAIL_1
+    const restrictedEmail2 = process.env.RESTRICTED_EMAIL_2
+    
+    let query: any = { 
       uid: { $ne: currentUserId },
       emailVerified: true,
       blocked: { $ne: currentUserId }
-    }).lean()
+    }
+    
+    // If current user is email1, show only email2
+    if (currentUser?.email === restrictedEmail1) {
+      query.email = restrictedEmail2
+    }
+    // For other users (except email2), hide email1
+    else if (currentUser?.email !== restrictedEmail2) {
+      query.email = { $ne: restrictedEmail1 }
+    }
+
+    const users = await User.find(query).lean()
 
     const formattedUsers = users
       .filter((user) => !currentUser?.blocked?.includes(user.uid))

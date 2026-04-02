@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const formattedChats = chats.map((chat) => {
       const participantImages: { [key: string]: string } = {};
       
-      chat.participants.forEach(pId => {
+      chat.participants.forEach((pId: string) => {
         const pUser = userMap.get(pId);
         if (pUser) {
           const isBlockedByParticipant = pUser.blocked?.includes(userId);
