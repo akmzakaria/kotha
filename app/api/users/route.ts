@@ -16,22 +16,27 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const currentUser = await User.findOne({ uid: currentUserId }).lean()
+    
     const users = await User.find({ 
       uid: { $ne: currentUserId },
-      emailVerified: true 
+      emailVerified: true,
+      blocked: { $ne: currentUserId }
     }).lean()
 
-    const formattedUsers = users.map((user) => ({
-      uid: user.uid,
-      displayName: user.displayName,
-      email: user.email,
-      profileImage: user.profileImage,
-      status: user.status,
-      lastSeen: user.lastSeen,
-      friendRequests: user.friendRequests || [],
-      friends: user.friends || [],
-      blocked: user.blocked || [],
-    }))
+    const formattedUsers = users
+      .filter((user) => !currentUser?.blocked?.includes(user.uid))
+      .map((user) => ({
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+        profileImage: user.profileImage,
+        status: user.status,
+        lastSeen: user.lastSeen,
+        friendRequests: user.friendRequests || [],
+        friends: user.friends || [],
+        blocked: user.blocked || [],
+      }))
 
     return NextResponse.json(formattedUsers)
   } catch (error) {

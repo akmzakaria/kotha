@@ -6,6 +6,7 @@ export interface ChatRoom {
   id: string;
   participants: string[];
   participantNames: { [key: string]: string };
+  participantImages?: { [key: string]: string };
   lastMessage: string;
   lastMessageTime: Date;
   unreadCount?: { [key: string]: number };
@@ -37,6 +38,12 @@ export interface UserProfile {
   friendRequests: string[];
 }
 
+export const getBlockedUsers = async (userId: string): Promise<UserProfile[]> => {
+  const response = await fetch(`/api/blocked?userId=${encodeURIComponent(userId)}`);
+  if (!response.ok) throw new Error("Failed to fetch blocked users");
+  return response.json();
+};
+
 export const createOrUpdateUserProfile = async (user: FirebaseUser) => {
   const response = await fetch("/api/users", {
     method: "POST",
@@ -59,8 +66,11 @@ export const getAllUsers = async (currentUserId: string): Promise<UserProfile[]>
   return response.json();
 };
 
-export const getUserProfile = async (userId: string): Promise<UserProfile> => {
-  const response = await fetch(`/api/users/${encodeURIComponent(userId)}`);
+export const getUserProfile = async (userId: string, requesterId?: string): Promise<UserProfile> => {
+  const url = requesterId 
+    ? `/api/users/${encodeURIComponent(userId)}?requesterId=${encodeURIComponent(requesterId)}`
+    : `/api/users/${encodeURIComponent(userId)}`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error("Failed to fetch user profile");
   return response.json();
 };

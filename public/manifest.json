@@ -8,15 +8,15 @@
   "theme_color": "#00665C",
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "/Kothaa.svg",
       "sizes": "512x512",
-      "type": "image/svg",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo.svg",
-      "sizes": "48x48",
-      "type": "image/x-icon"
+      "src": "/Kothaa_icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
     }
   ]
 }

@@ -16,12 +16,12 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
-    getUserProfile(userId).then((p) => {
+    if (!userId || !user) return;
+    getUserProfile(userId, user.uid).then((p) => {
       setProfile(p);
       setLoading(false);
     });
-  }, [userId]);
+  }, [userId, user]);
 
   if (loading) {
     return null;

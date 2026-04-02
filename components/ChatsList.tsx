@@ -142,10 +142,9 @@ export default function ChatsList() {
             const otherUserName = otherUserId
               ? chat.participantNames[otherUserId]
               : "Unknown"
-            const otherUser = users.find((u) => u.uid === otherUserId)
-            const profileImage =
-              otherUser?.profileImage ||
-              `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUserName}`
+            const profileImage = otherUserId && chat.participantImages?.[otherUserId]
+              ? chat.participantImages[otherUserId]
+              : `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUserName}`
             const unreadCount = chat.unreadCount?.[user?.uid || ""] || 0
             const hasUnread = unreadCount > 0
 

@@ -2,14 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { getUserProfile, getAllUsers, unblockUser } from "@/lib/chatService";
+import { getBlockedUsers, unblockUser } from "@/lib/chatService";
 import { UserProfile } from "@/lib/chatService";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function BlockedUsersPage() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const router = useRouter();
+  const [blockedUsers, setBlockedUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -18,23 +19,26 @@ export default function BlockedUsersPage() {
     document.title = "Blocked Users - Kothaa";
   }, []);
 
-  useEffect(() => {
+  const fetchBlockedUsers = async () => {
     if (!user) return;
-    Promise.all([getUserProfile(user.uid), getAllUsers(user.uid)]).then(([p, users]) => {
-      setProfile(p);
-      setAllUsers(users);
-      setLoading(false);
-    });
-  }, [user]);
+    try {
+      const users = await getBlockedUsers(user.uid);
+      setBlockedUsers(users);
+    } catch (error) {
+      console.error("Error fetching blocked users:", error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchBlockedUsers(); }, [user]);
 
   const handleUnblock = async (targetUid: string) => {
     if (!user) return;
     await unblockUser(user.uid, targetUid);
-    setProfile((prev) => prev ? { ...prev, blocked: prev.blocked.filter((id) => id !== targetUid) } : prev);
+    await fetchBlockedUsers();
   };
 
-  const filteredBlocked = (profile?.blocked || []).filter((blockedUid) => {
-    const blockedUser = allUsers.find((u) => u.uid === blockedUid);
+  const filteredBlocked = blockedUsers.filter((blockedUser) => {
     return blockedUser?.displayName.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
@@ -71,12 +75,13 @@ export default function BlockedUsersPage() {
       {filteredBlocked.length === 0 ? (
         <p className="text-base-content/70">{searchQuery ? "No blocked users found" : "No blocked users"}</p>
       ) : (
-        filteredBlocked.map((blockedUid) => {
-          const blockedUser = allUsers.find((u) => u.uid === blockedUid);
-          if (!blockedUser) return null;
+        filteredBlocked.map((blockedUser) => {
           return (
-            <div key={blockedUid} className="flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3">
-              <div className="flex flex-col px-2 shrink-0">
+            <div key={blockedUser.uid} className="flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3">
+              <div 
+                className="flex flex-col px-2 shrink-0 cursor-pointer"
+                onClick={() => router.push(`/user/${blockedUser.uid}`)}
+              >
                 {blockedUser.profileImage && blockedUser.profileImage !== "/favicon.ico" ? (
                   <Image width={50} height={50} className="rounded-full" src={blockedUser.profileImage} alt={blockedUser.displayName} />
                 ) : (
@@ -90,10 +95,9 @@ export default function BlockedUsersPage() {
               
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="font-semibold text-base-content truncate">{blockedUser.displayName}</span>
-                <p className="text-sm text-base-content/70 truncate">{blockedUser.email}</p>
               </div>
               
-              <button onClick={() => handleUnblock(blockedUid)} className="px-4 py-2 bg-primary text-primary-content hover:bg-primary/80 rounded-lg text-sm font-medium transition-colors shrink-0">
+              <button onClick={() => handleUnblock(blockedUser.uid)} className="px-4 py-2 bg-primary text-primary-content hover:bg-primary/80 rounded-lg text-sm font-medium transition-colors shrink-0">
                 Unblock
               </button>
             </div>

@@ -38,34 +38,23 @@ export async function PATCH(
 
     // Friend request: send request to targetUid
     if (action === "send_request" && targetUid) {
-      console.log(`[Friend Request] From ${userId} to ${targetUid}`);
-      
       const target = await User.findOne({ uid: targetUid });
       if (!target) {
-        console.log(`[Friend Request] Target user ${targetUid} not found`);
         return NextResponse.json({ error: "Target user not found" }, { status: 404 });
       }
       
       if (target.friends?.includes(userId)) {
-        console.log(`[Friend Request] Already friends`);
         return NextResponse.json({ error: "Already friends" }, { status: 400 });
       }
       
       if (target.friendRequests?.includes(userId)) {
-        console.log(`[Friend Request] Request already sent`);
         return NextResponse.json({ success: true, message: "Request already sent" });
       }
       
-      const result = await User.updateOne(
+      await User.updateOne(
         { uid: targetUid },
         { $addToSet: { friendRequests: userId } }
       );
-      
-      console.log(`[Friend Request] Update result:`, result);
-      
-      if (result.modifiedCount === 0 && result.matchedCount === 0) {
-        return NextResponse.json({ error: "Failed to send request" }, { status: 500 });
-      }
     }
 
     // Accept friend request
@@ -112,7 +101,11 @@ export async function PATCH(
     if (action === "block" && targetUid) {
       await User.updateOne(
         { uid: userId },
-        { $addToSet: { blocked: targetUid }, $pull: { friends: targetUid } }
+        { $addToSet: { blocked: targetUid }, $pull: { friends: targetUid, friendRequests: targetUid } }
+      );
+      await User.updateOne(
+        { uid: targetUid },
+        { $pull: { friends: userId, friendRequests: userId } }
       );
     }
 
@@ -138,13 +131,20 @@ export async function GET(
   try {
     await dbConnect();
     const { userId } = await params;
+    const { searchParams } = new URL(request.url);
+    const requesterId = searchParams.get("requesterId");
+    
     const user = await User.findOne({ uid: userId }).lean();
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    
+    const isBlockedByUser = user.blocked?.includes(requesterId || "");
+    const defaultUserIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+    
     return NextResponse.json({
       uid: user.uid,
       displayName: user.displayName,
       email: user.email,
-      profileImage: user.profileImage,
+      profileImage: isBlockedByUser ? defaultUserIcon : user.profileImage,
       bio: user.bio || "",
       status: user.status,
       lastSeen: user.lastSeen,

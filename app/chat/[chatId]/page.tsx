@@ -7,7 +7,6 @@ import {
   getMessages,
   sendMessage,
   getChatDetails,
-  getAllUsers,
   editMessage,
   deleteMessage,
   blockUser,
@@ -101,8 +100,8 @@ export default function ChatPage() {
   }
 
   const userAtBottomRef = useRef(true)
-  const lastMessageIdRef = useRef<string | null>(null);
-  const autoScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastMessageIdRef = useRef<string | null>(null)
+  const autoScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!chatId || !user) return
@@ -115,15 +114,12 @@ export default function ChatPage() {
           )
           if (otherId) {
             setOtherUserId(otherId)
-            const [allUsers, currentProfile] = await Promise.all([
-              getAllUsers(user.uid),
+            const [otherProfile, currentProfile] = await Promise.all([
+              getUserProfile(otherId, user.uid),
               getUserProfile(user.uid),
             ])
-            const otherUser = allUsers.find((u) => u.uid === otherId)
-            if (otherUser) {
-              setOtherUserName(otherUser.displayName)
-              setOtherUserImage(otherUser.profileImage)
-            }
+            setOtherUserName(otherProfile.displayName)
+            setOtherUserImage(otherProfile.profileImage)
             setIsBlocked(currentProfile.blocked?.includes(otherId) || false)
             setIsFriend(currentProfile.friends?.includes(otherId) || false)
           }
@@ -133,12 +129,12 @@ export default function ChatPage() {
           "Messages received:",
           msgs.filter((m: any) => m.deleted),
         )
-        setMessages(msgs);
+        setMessages(msgs)
         // Remember last message id and attempt an initial scroll (a couple tries
         // help with production layout timing without forcing scroll on user).
-        lastMessageIdRef.current = msgs.length ? msgs[msgs.length - 1].id : null;
-        setTimeout(() => scrollToBottom("auto"), 50);
-        setTimeout(() => scrollToBottom("auto"), 300);
+        lastMessageIdRef.current = msgs.length ? msgs[msgs.length - 1].id : null
+        setTimeout(() => scrollToBottom("auto"), 50)
+        setTimeout(() => scrollToBottom("auto"), 300)
 
         // Mark chat as read and messages as seen
         await Promise.all([
@@ -172,15 +168,15 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (messages.length === 0) {
-      lastMessageIdRef.current = null;
-      return;
+      lastMessageIdRef.current = null
+      return
     }
-    const lastId = messages[messages.length - 1]?.id || null;
-    const prevLast = lastMessageIdRef.current;
-    const isNewMessage = prevLast !== lastId;
+    const lastId = messages[messages.length - 1]?.id || null
+    const prevLast = lastMessageIdRef.current
+    const isNewMessage = prevLast !== lastId
 
     // Update whether user is near bottom
-    userAtBottomRef.current = isUserNearBottom();
+    userAtBottomRef.current = isUserNearBottom()
 
     // Only auto-scroll when a new message arrived and the user is already at bottom.
     // Use a short debounce to avoid racing with the user's scroll event.
@@ -200,8 +196,8 @@ export default function ChatPage() {
       }
     }
 
-    lastMessageIdRef.current = lastId;
-  }, [messages]);
+    lastMessageIdRef.current = lastId
+  }, [messages])
 
   // Clear any pending timer on unmount
   useEffect(() => {
@@ -266,9 +262,10 @@ export default function ChatPage() {
       deleted: false,
       timestamp: new Date(),
     }
+    
+    setSending(true)
     setMessages((prev) => [...prev, optimisticMessage])
     setMessageText("")
-    setSending(true)
 
     try {
       const saved = await sendMessage(
@@ -490,8 +487,17 @@ export default function ChatPage() {
           aria-label="Scroll to latest messages"
           className="absolute right-4 bottom-20 z-50 bg-primary text-primary-content p-2 rounded-full shadow-lg hover:scale-105 transition-transform"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v8.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 12.586V4a1 1 0 011-1z" clipRule="evenodd" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 3a1 1 0 011 1v8.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 12.586V4a1 1 0 011-1z"
+              clipRule="evenodd"
+            />
           </svg>
         </button>
       )}
@@ -783,7 +789,7 @@ export default function ChatPage() {
           disabled={!messageText.trim() || sending || !isFriend}
           className="bg-primary hover:bg-primary/80 active:bg-primary/60 text-primary-content disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-lg font-semibold transition-colors shrink-0 h-[44px]"
         >
-          {sending ? "Sending..." : "Send"}
+          Send
         </button>
       </form>
     </div>
