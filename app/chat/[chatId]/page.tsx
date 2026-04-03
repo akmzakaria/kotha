@@ -38,6 +38,7 @@ export default function ChatPage() {
   const [otherUserName, setOtherUserName] = useState("")
   const [otherUserImage, setOtherUserImage] = useState("/favicon.ico")
   const [otherUserId, setOtherUserId] = useState("")
+  const [otherUserStatus, setOtherUserStatus] = useState<"online" | "offline" | "away">("offline")
   const [isBlocked, setIsBlocked] = useState(false)
   const [isFriend, setIsFriend] = useState(false)
   const [sending, setSending] = useState(false)
@@ -120,6 +121,7 @@ export default function ChatPage() {
             ])
             setOtherUserName(otherProfile.displayName)
             setOtherUserImage(otherProfile.profileImage)
+            setOtherUserStatus(otherProfile.status || "offline")
             setIsBlocked(currentProfile.blocked?.includes(otherId) || false)
             setIsFriend(currentProfile.friends?.includes(otherId) || false)
           }
@@ -152,6 +154,17 @@ export default function ChatPage() {
       try {
         const msgs = await getMessages(chatId)
         setMessages(msgs)
+        
+        // Update other user's status
+        if (otherUserId) {
+          try {
+            const otherProfile = await getUserProfile(otherUserId, user.uid);
+            setOtherUserStatus(otherProfile.status || "offline");
+          } catch (error) {
+            console.error("Failed to fetch user status:", error);
+          }
+        }
+        
         if (!document.hidden) {
           await Promise.all([
             markChatAsRead(chatId, user.uid),
@@ -164,7 +177,7 @@ export default function ChatPage() {
     }, 2000)
 
     return () => clearInterval(interval)
-  }, [chatId, user])
+  }, [chatId, user, otherUserId])
 
   useEffect(() => {
     if (messages.length === 0) {
@@ -419,7 +432,7 @@ export default function ChatPage() {
         <div className="flex-1">
           <h2 className="font-semibold text-base-content">{otherUserName}</h2>
           <p className="text-xs text-base-content/70">
-            {isTyping ? "typing..." : "Online"}
+            {isTyping ? "typing..." : otherUserStatus === "online" ? "Online" : otherUserStatus === "away" ? "Away" : "Offline"}
           </p>
         </div>
         {/* Chat options menu */}
