@@ -2,16 +2,15 @@
 
 import React, { useEffect, useState } from "react"
 import { useAuth } from "@/app/context/AuthContext"
-import { getUserChats, getAllUsers } from "@/lib/chatService"
+import { getUserChats } from "@/lib/chatService"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ChatRoom, UserProfile } from "@/lib/chatService"
+import { ChatRoom } from "@/lib/chatService"
 
 export default function ChatsList() {
   const { user } = useAuth()
   const router = useRouter()
   const [chats, setChats] = useState<ChatRoom[]>([])
-  const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -25,18 +24,13 @@ export default function ChatsList() {
 
     const fetchData = async () => {
       try {
-        const [userChats, allUsers] = await Promise.all([
-          getUserChats(user.uid),
-          getAllUsers(user.uid),
-        ])
-        // Sort chats by lastMessageTime descending (newest first)
+        const userChats = await getUserChats(user.uid)
         const sortedChats = [...userChats].sort((a, b) => {
           const timeA = new Date(a.lastMessageTime).getTime()
           const timeB = new Date(b.lastMessageTime).getTime()
           return timeB - timeA
         })
         setChats(sortedChats)
-        setUsers(allUsers)
       } catch (error) {
         console.error("Error fetching data:", error)
       }
@@ -44,8 +38,6 @@ export default function ChatsList() {
     }
 
     fetchData()
-
-    // Poll for updates every 2 seconds
     const interval = setInterval(fetchData, 2000)
     return () => clearInterval(interval)
   }, [user])

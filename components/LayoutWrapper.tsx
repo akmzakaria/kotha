@@ -12,7 +12,7 @@ export default function LayoutWrapper({
 }) {
   const pathname = usePathname()
   const isLoginPage = pathname === "/login"
-  const isChatPage = pathname.startsWith("/chat/")
+  const isChatPage = pathname?.startsWith("/chat/") || false
 
   if (isLoginPage) {
     return <>{children}</>

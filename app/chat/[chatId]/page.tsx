@@ -30,7 +30,7 @@ export default function ChatPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
   const { showConfirm } = useConfirm()
-  const chatId = params.chatId as string
+  const chatId = (params?.chatId as string) || ""
 
   const [messages, setMessages] = useState<Message[]>([])
   const [messageText, setMessageText] = useState("")
@@ -148,16 +148,16 @@ export default function ChatPage() {
     }
     fetchChatData()
 
-    // Poll for new messages every 2 seconds
     const interval = setInterval(async () => {
       try {
         const msgs = await getMessages(chatId)
         setMessages(msgs)
-        // Mark as read and seen on each poll
-        await Promise.all([
-          markChatAsRead(chatId, user.uid),
-          markMessagesAsSeen(chatId, user.uid),
-        ])
+        if (!document.hidden) {
+          await Promise.all([
+            markChatAsRead(chatId, user.uid),
+            markMessagesAsSeen(chatId, user.uid),
+          ])
+        }
       } catch (error) {
         console.error("Error polling messages:", error)
       }
@@ -215,10 +215,12 @@ export default function ChatPage() {
     const container = messagesContainerRef.current
     if (!container) return
     const onScroll = () => {
-      const scrolledUp = container.scrollTop < container.clientHeight
+      const scrolledDistance = container.scrollHeight - container.scrollTop - container.clientHeight
+      const avgMessageHeight = 80
+      const messagesScrolledPast = Math.floor(scrolledDistance / avgMessageHeight)
       const nearBottom = isUserNearBottom(150)
       userAtBottomRef.current = nearBottom
-      setShowScrollDown(scrolledUp && !nearBottom && messages.length > 0)
+      setShowScrollDown(messagesScrolledPast >= 10 && messages.length > 0)
     }
     container.addEventListener("scroll", onScroll, { passive: true })
     // initialize
@@ -485,7 +487,7 @@ export default function ChatPage() {
             setShowScrollDown(false)
           }}
           aria-label="Scroll to latest messages"
-          className="absolute right-4 bottom-20 z-50 bg-primary text-primary-content p-2 rounded-full shadow-lg hover:scale-105 transition-transform"
+          className="absolute left-1/2 -translate-x-1/2 bottom-20 z-50 bg-primary text-primary-content p-2 rounded-full shadow-lg hover:scale-105 transition-transform"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

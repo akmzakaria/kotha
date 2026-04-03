@@ -11,7 +11,7 @@ export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const userId = params.userId as string;
+  const userId = (params?.userId as string) || "";
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 

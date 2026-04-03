@@ -79,10 +79,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    const handleBeforeUnload = async () => {
+      await updateUserStatus(user.uid, "offline");
+    };
+
+    const handleUnload = () => {
+      // Use sendBeacon for reliable offline status on page close
+      const data = JSON.stringify({ status: "offline" });
+      navigator.sendBeacon(`/api/users/${user.uid}`, data);
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("unload", handleUnload);
     
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("unload", handleUnload);
     };
   }, [user]);
 
