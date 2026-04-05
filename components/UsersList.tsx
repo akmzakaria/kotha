@@ -14,8 +14,32 @@ export default function UsersList() {
   const router = useRouter();
   const { showToast } = useToast();
   const { showConfirm } = useConfirm();
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
+  const [users, setUsers] = useState<UserProfile[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('users_list')
+      if (cached) {
+        try {
+          return JSON.parse(cached)
+        } catch {
+          return []
+        }
+      }
+    }
+    return []
+  });
+  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('current_profile')
+      if (cached) {
+        try {
+          return JSON.parse(cached)
+        } catch {
+          return null
+        }
+      }
+    }
+    return null
+  });
   const [actionStates, setActionStates] = useState<Record<string, string | undefined>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,6 +57,11 @@ export default function UsersList() {
       ]);
       setUsers(allUsers);
       setCurrentProfile(profile);
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('users_list', JSON.stringify(allUsers))
+        localStorage.setItem('current_profile', JSON.stringify(profile))
+      }
     } catch (err) {
       console.error(err);
     }

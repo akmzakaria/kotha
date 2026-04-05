@@ -10,7 +10,22 @@ import { ChatRoom } from "@/lib/chatService"
 export default function ChatsList() {
   const { user } = useAuth()
   const router = useRouter()
-  const [chats, setChats] = useState<ChatRoom[]>([])
+  const [chats, setChats] = useState<ChatRoom[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('chats_list')
+      if (cached) {
+        try {
+          return JSON.parse(cached).map((c: any) => ({
+            ...c,
+            lastMessageTime: c.lastMessageTime ? new Date(c.lastMessageTime) : null
+          }))
+        } catch {
+          return []
+        }
+      }
+    }
+    return []
+  })
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -30,6 +45,10 @@ export default function ChatsList() {
           return timeB - timeA
         })
         setChats(sortedChats)
+        // Save to localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('chats_list', JSON.stringify(sortedChats))
+        }
       } catch (error) {
         console.error("Error fetching data:", error)
       }

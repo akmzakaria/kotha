@@ -10,8 +10,32 @@ import { useRouter } from "next/navigation";
 export default function FriendsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('friends_profile')
+      if (cached) {
+        try {
+          return JSON.parse(cached)
+        } catch {
+          return null
+        }
+      }
+    }
+    return null
+  });
+  const [allUsers, setAllUsers] = useState<UserProfile[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('friends_all_users')
+      if (cached) {
+        try {
+          return JSON.parse(cached)
+        } catch {
+          return []
+        }
+      }
+    }
+    return []
+  });
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -24,6 +48,11 @@ export default function FriendsPage() {
     Promise.all([getUserProfile(user.uid), getAllUsers(user.uid)]).then(([p, users]) => {
       setProfile(p);
       setAllUsers(users);
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('friends_profile', JSON.stringify(p))
+        localStorage.setItem('friends_all_users', JSON.stringify(users))
+      }
     });
   }, [user]);
 
@@ -40,7 +69,7 @@ export default function FriendsPage() {
   const friends = allUsers.filter((u) => friendIds.includes(u.uid));
   const filteredFriends = friends.filter((f) => f.displayName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const showSkeleton = friends.length === 0 && !profile;
+  const showSkeleton = friends.length === 0 && !profile && typeof window !== 'undefined' && !localStorage.getItem('friends_profile');
 
   return (
     <div className="h-full overflow-y-auto flex flex-col">

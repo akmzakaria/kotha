@@ -10,8 +10,32 @@ import { useRouter } from "next/navigation";
 export default function RequestsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('requests_profile')
+      if (cached) {
+        try {
+          return JSON.parse(cached)
+        } catch {
+          return null
+        }
+      }
+    }
+    return null
+  });
+  const [allUsers, setAllUsers] = useState<UserProfile[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('requests_all_users')
+      if (cached) {
+        try {
+          return JSON.parse(cached)
+        } catch {
+          return []
+        }
+      }
+    }
+    return []
+  });
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -24,26 +48,45 @@ export default function RequestsPage() {
     Promise.all([getUserProfile(user.uid), getAllUsers(user.uid)]).then(([p, users]) => {
       setProfile(p);
       setAllUsers(users);
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('requests_profile', JSON.stringify(p))
+        localStorage.setItem('requests_all_users', JSON.stringify(users))
+      }
     });
   }, [user]);
 
   const handleAccept = async (fromUid: string) => {
     if (!user) return;
     await acceptFriendRequest(user.uid, fromUid);
-    setProfile((prev) => prev ? {
-      ...prev,
-      friends: [...prev.friends, fromUid],
-      friendRequests: prev.friendRequests.filter((id) => id !== fromUid),
-    } : prev);
+    setProfile((prev) => {
+      const updated = prev ? {
+        ...prev,
+        friends: [...prev.friends, fromUid],
+        friendRequests: prev.friendRequests.filter((id) => id !== fromUid),
+      } : prev;
+      // Update localStorage
+      if (typeof window !== 'undefined' && updated) {
+        localStorage.setItem('requests_profile', JSON.stringify(updated))
+      }
+      return updated;
+    });
   };
 
   const handleDecline = async (fromUid: string) => {
     if (!user) return;
     await declineFriendRequest(user.uid, fromUid);
-    setProfile((prev) => prev ? {
-      ...prev,
-      friendRequests: prev.friendRequests.filter((id) => id !== fromUid),
-    } : prev);
+    setProfile((prev) => {
+      const updated = prev ? {
+        ...prev,
+        friendRequests: prev.friendRequests.filter((id) => id !== fromUid),
+      } : prev;
+      // Update localStorage
+      if (typeof window !== 'undefined' && updated) {
+        localStorage.setItem('requests_profile', JSON.stringify(updated))
+      }
+      return updated;
+    });
   };
 
   const requests = profile?.friendRequests || [];
@@ -52,7 +95,7 @@ export default function RequestsPage() {
     return requester?.displayName.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const showSkeleton = !profile;
+  const showSkeleton = !profile && typeof window !== 'undefined' && !localStorage.getItem('requests_profile');
 
   return (
     <div className="h-full overflow-y-auto flex flex-col">
