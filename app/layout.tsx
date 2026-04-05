@@ -33,6 +33,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="prefetch" href="/chats" />
+        <link rel="prefetch" href="/users" />
+        <link rel="prefetch" href="/friends" />
+        <link rel="prefetch" href="/requests" />
+        <link rel="prefetch" href="/profile" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-base-100 text-base-content`}
       >

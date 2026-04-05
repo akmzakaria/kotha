@@ -11,7 +11,6 @@ export default function ChatsList() {
   const { user } = useAuth()
   const router = useRouter()
   const [chats, setChats] = useState<ChatRoom[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -34,7 +33,6 @@ export default function ChatsList() {
       } catch (error) {
         console.error("Error fetching data:", error)
       }
-      setLoading(false)
     }
 
     fetchData()
@@ -78,9 +76,7 @@ export default function ChatsList() {
       return timeB - timeA
     })
 
-  if (loading) {
-    return null
-  }
+  const showSkeleton = chats.length === 0;
 
   return (
     <div className="h-full flex flex-col">
@@ -122,7 +118,20 @@ export default function ChatsList() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-4 space-y-2">
-        {filteredChats.length === 0 ? (
+        {showSkeleton ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center rounded-xl p-2 gap-3 animate-pulse">
+              <div className="w-[50px] h-[50px] rounded-full bg-base-300" />
+              <div className="flex-1 space-y-2">
+                <div className="flex justify-between">
+                  <div className="h-4 bg-base-300 rounded w-32" />
+                  <div className="h-3 bg-base-300 rounded w-16" />
+                </div>
+                <div className="h-3 bg-base-300 rounded w-48" />
+              </div>
+            </div>
+          ))
+        ) : filteredChats.length === 0 ? (
           <p className="text-base-content/70">
             {searchQuery
               ? "No chats found"

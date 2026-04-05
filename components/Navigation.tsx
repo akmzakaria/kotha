@@ -3,6 +3,7 @@
 import React from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { getUserProfile, getUserChats } from "@/lib/chatService";
 import { useToast } from "@/components/ToastProvider";

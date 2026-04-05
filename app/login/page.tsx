@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ToastProvider"
 
 export default function LoginPage() {
-  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } =
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } =
     useAuth()
   const router = useRouter()
   const { showToast } = useToast()
@@ -100,10 +100,6 @@ export default function LoginPage() {
     }
   }
 
-  if (loading) {
-    return null
-  }
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-base-100 py-8">
       <div className="w-full max-w-md mx-auto px-6">
@@ -180,8 +176,7 @@ export default function LoginPage() {
         {/* Google Sign In Button */}
         <button
           onClick={handleGoogleSignIn}
-          disabled={loading}
-          className="w-full bg-base-200 hover:bg-base-300 active:bg-base-100 transition-all duration-200 text-base-content font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-base-300"
+          className="w-full bg-base-200 hover:bg-base-300 active:bg-base-100 transition-all duration-200 text-base-content font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-3 border border-base-300"
         >
           <svg
             className="w-5 h-5"

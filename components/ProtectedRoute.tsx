@@ -14,41 +14,18 @@ export default function ProtectedRoute({
   const pathname = usePathname();
 
   useEffect(() => {
-    // Redirect to login if not authenticated (and not already on login page)
     if (!loading && !user && pathname !== "/login") {
       router.push("/login");
     }
   }, [user, loading, router, pathname]);
 
-  // Allow login page to show without protection
   if (pathname === "/login") {
     return <>{children}</>;
   }
 
-  // If loading, show loading spinner
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#1A2421]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderBottomColor: '#00665C' }}></div>
-          <p className="text-base-content/70">Loading</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Not logged in - show loading/redirecting message
   if (!user) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#1A2421]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderBottomColor: '#00665C' }}></div>
-          <p className="text-base-content/70">Loading</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
-  // User is logged in, show content
   return <>{children}</>;
 }

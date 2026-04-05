@@ -34,7 +34,6 @@ export default function ChatPage() {
 
   const [messages, setMessages] = useState<Message[]>([])
   const [messageText, setMessageText] = useState("")
-  const [loading, setLoading] = useState(true)
   const [otherUserName, setOtherUserName] = useState("")
   const [otherUserImage, setOtherUserImage] = useState("/favicon.ico")
   const [otherUserId, setOtherUserId] = useState("")
@@ -146,7 +145,6 @@ export default function ChatPage() {
       } catch (error) {
         console.error("Error fetching chat data:", error)
       }
-      setLoading(false)
     }
     fetchChatData()
 
@@ -386,9 +384,7 @@ export default function ChatPage() {
     setShowChatMenu(false)
   }
 
-  if (loading) {
-    return null
-  }
+  const showSkeleton = !otherUserName || messages.length === 0;
 
   return (
     <div
@@ -418,6 +414,16 @@ export default function ChatPage() {
             />
           </svg>
         </button>
+        {showSkeleton ? (
+          <>
+            <div className="w-10 h-10 rounded-full bg-base-300 animate-pulse" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-base-300 rounded w-32 animate-pulse" />
+              <div className="h-3 bg-base-300 rounded w-20 animate-pulse" />
+            </div>
+          </>
+        ) : (
+          <>
         <Image
           width={40}
           height={40}
@@ -435,6 +441,8 @@ export default function ChatPage() {
             {isTyping ? "typing..." : otherUserStatus === "online" ? "Online" : otherUserStatus === "away" ? "Away" : "Offline"}
           </p>
         </div>
+        </>
+        )}
         {/* Chat options menu */}
         <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button
@@ -522,7 +530,18 @@ export default function ChatPage() {
         ref={messagesContainerRef}
         className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 flex flex-col space-y-6"
       >
-        {messages.length === 0 ? (
+        {showSkeleton ? (
+          <div className="flex flex-col space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[70%] p-3 rounded-2xl ${i % 2 === 0 ? 'bg-primary/20' : 'bg-base-200'} animate-pulse`}>
+                  <div className="h-4 bg-base-300 rounded w-48 mb-2" />
+                  <div className="h-3 bg-base-300 rounded w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-base-content/50">
               No messages yet. Start the conversation!

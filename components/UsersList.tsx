@@ -16,7 +16,6 @@ export default function UsersList() {
   const { showConfirm } = useConfirm();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
   const [actionStates, setActionStates] = useState<Record<string, string | undefined>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,7 +26,6 @@ export default function UsersList() {
 
   const fetchUsers = async () => {
     if (!user) return;
-    setLoading(true);
     try {
       const [allUsers, profile] = await Promise.all([
         getAllUsers(user.uid),
@@ -38,7 +36,6 @@ export default function UsersList() {
     } catch (err) {
       console.error(err);
     }
-    setLoading(false);
   };
 
   useEffect(() => { fetchUsers(); }, [user]);
@@ -110,9 +107,7 @@ export default function UsersList() {
   const filteredUsers = users.filter((u) => !currentProfile?.blocked?.includes(u.uid))
     .filter((u) => u.displayName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  if (loading) {
-    return null;
-  }
+  const showSkeleton = users.length === 0 && !currentProfile;
 
   return (
     <div className="h-full flex flex-col">
@@ -140,7 +135,19 @@ export default function UsersList() {
 
       <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-4 space-y-2">
 
-      {filteredUsers.map((userItem) => {
+      {showSkeleton ? (
+        Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="flex items-center rounded-xl p-2 gap-3 animate-pulse">
+            <div className="w-[50px] h-[50px] rounded-full bg-base-300" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-base-300 rounded w-32" />
+              <div className="h-3 bg-base-300 rounded w-20" />
+            </div>
+            <div className="h-8 w-20 bg-base-300 rounded-lg" />
+          </div>
+        ))
+      ) : (
+        filteredUsers.map((userItem) => {
         const isFriend = currentProfile?.friends?.includes(userItem.uid);
         const requestSent = actionStates[userItem.uid] === "sent" || userItem.friendRequests?.includes(currentProfile?.uid || "");
 
@@ -200,7 +207,8 @@ export default function UsersList() {
             </div>
           </div>
         );
-      })}
+      })
+      )}
       </div>
     </div>
   );

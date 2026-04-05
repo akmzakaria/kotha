@@ -41,3 +41,17 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  overscroll-behavior: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: auto;
+  }
+}

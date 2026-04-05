@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  reactStrictMode: false,
+  experimental: {
+    optimizePackageImports: ['firebase', 'mongoose'],
+  },
 };
 
 export default nextConfig;

@@ -13,21 +13,17 @@ export default function UserProfilePage() {
   const { user } = useAuth();
   const userId = (params?.userId as string) || "";
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!userId || !user) return;
     getUserProfile(userId, user.uid).then((p) => {
       setProfile(p);
-      setLoading(false);
     });
   }, [userId, user]);
 
-  if (loading) {
-    return null;
-  }
+  const showSkeleton = !profile;
 
-  if (!profile) {
+  if (!profile && !showSkeleton) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-base-content/70">User not found</p>
@@ -57,6 +53,24 @@ export default function UserProfilePage() {
             Back
           </button>
 
+        {showSkeleton ? (
+          <>
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-base-300 animate-pulse" />
+              <div className="h-8 bg-base-300 rounded w-48 animate-pulse" />
+            </div>
+            <div className="bg-base-200 rounded-xl p-5 md:p-6 animate-pulse">
+              <div className="h-6 bg-base-300 rounded w-20 mb-3" />
+              <div className="h-4 bg-base-300 rounded w-full mb-2" />
+              <div className="h-4 bg-base-300 rounded w-3/4" />
+            </div>
+            <div className="bg-base-200 rounded-xl p-5 md:p-6 flex justify-between items-center animate-pulse">
+              <div className="h-5 bg-base-300 rounded w-24" />
+              <div className="h-8 bg-base-300 rounded w-12" />
+            </div>
+          </>
+        ) : (
+          <>
         {/* Avatar */}
         <div className="flex flex-col items-center gap-4">
           <Image
@@ -83,6 +97,8 @@ export default function UserProfilePage() {
           <span className="text-base-content/70 text-base md:text-lg">Friends</span>
           <span className="font-semibold text-base-content text-xl md:text-2xl">{profile.friends?.length || 0}</span>
         </div>
+        </>
+        )}
         </div>
       </div>
     </div>
