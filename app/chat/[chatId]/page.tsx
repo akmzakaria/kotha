@@ -425,17 +425,37 @@ export default function ChatPage() {
           </>
         ) : (
           <>
-            <Image
-              width={40}
-              height={40}
-              className="rounded-full cursor-pointer hover:opacity-80 transition-opacity"
-              src={otherUserImage}
-              alt={otherUserName}
-              onClick={(e) => {
-                e.stopPropagation()
-                router.push(`/user/${otherUserId}`)
-              }}
-            />
+            <div className="relative w-10 h-10 flex items-center justify-center bg-base-200 rounded-full">
+              {otherUserImage && otherUserImage !== '/favicon.ico' ? (
+                <Image
+                  width={40}
+                  height={40}
+                  className="rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+                  src={otherUserImage}
+                  alt={otherUserName}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push(`/user/${otherUserId}`)
+                  }}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.style.display = 'none'
+                  }}
+                />
+              ) : (
+                <svg 
+                  className="w-6 h-6 text-base-content/50 cursor-pointer" 
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push(`/user/${otherUserId}`)
+                  }}
+                >
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+              )}
+            </div>
             <div className="flex-1">
               <h2 className="font-semibold text-base-content">{otherUserName}</h2>
               <p className="text-xs text-base-content/70">
