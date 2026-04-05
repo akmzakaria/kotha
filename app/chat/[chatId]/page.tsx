@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import React, { useEffect, useRef, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { useAuth } from "@/app/context/AuthContext"
+import React, { useEffect, useRef, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { useAuth } from '@/app/context/AuthContext'
 import {
   getMessages,
   sendMessage,
@@ -18,11 +18,11 @@ import {
   getTypingUsers,
   markChatAsRead,
   markMessagesAsSeen,
-} from "@/lib/chatService"
-import Image from "next/image"
-import { Message } from "@/lib/chatService"
-import { useToast } from "@/components/ToastProvider"
-import { useConfirm } from "@/components/ConfirmProvider"
+} from '@/lib/chatService'
+import Image from 'next/image'
+import { Message } from '@/lib/chatService'
+import { useToast } from '@/components/ToastProvider'
+import { useConfirm } from '@/components/ConfirmProvider'
 
 export default function ChatPage() {
   const params = useParams()
@@ -30,34 +30,32 @@ export default function ChatPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
   const { showConfirm } = useConfirm()
-  const chatId = (params?.chatId as string) || ""
+  const chatId = (params?.chatId as string) || ''
 
   const [messages, setMessages] = useState<Message[]>([])
-  const [messageText, setMessageText] = useState("")
-  const [otherUserName, setOtherUserName] = useState("")
-  const [otherUserImage, setOtherUserImage] = useState("/favicon.ico")
-  const [otherUserId, setOtherUserId] = useState("")
-  const [otherUserStatus, setOtherUserStatus] = useState<"online" | "offline" | "away">("offline")
+  const [messageText, setMessageText] = useState('')
+  const [otherUserName, setOtherUserName] = useState('')
+  const [otherUserImage, setOtherUserImage] = useState('/favicon.ico')
+  const [otherUserId, setOtherUserId] = useState('')
+  const [otherUserStatus, setOtherUserStatus] = useState<'online' | 'offline' | 'away'>('offline')
   const [isBlocked, setIsBlocked] = useState(false)
   const [isFriend, setIsFriend] = useState(false)
   const [sending, setSending] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editText, setEditText] = useState("")
+  const [editText, setEditText] = useState('')
   const [menuMsgId, setMenuMsgId] = useState<string | null>(null)
   const [showChatMenu, setShowChatMenu] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
-  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(
-    null,
-  )
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showScrollDown, setShowScrollDown] = useState(false)
 
-  const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
+  const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     const container = messagesContainerRef.current
     try {
       if (container) {
-        if (typeof container.scrollTo === "function") {
+        if (typeof container.scrollTo === 'function') {
           try {
             container.scrollTo({ top: container.scrollHeight, behavior })
             return
@@ -66,37 +64,28 @@ export default function ChatPage() {
           }
         }
         container.scrollTop = container.scrollHeight
-      } else if (typeof window !== "undefined") {
+      } else if (typeof window !== 'undefined') {
         try {
           window.scrollTo({
-            top: Math.max(
-              document.documentElement.scrollHeight,
-              document.body.scrollHeight,
-            ),
+            top: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
             behavior,
           })
         } catch (err) {
           window.scrollTo(
             0,
-            Math.max(
-              document.documentElement.scrollHeight,
-              document.body.scrollHeight,
-            ),
+            Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)
           )
         }
       }
     } catch (e) {
-      console.error("scrollToBottom error:", e)
+      console.error('scrollToBottom error:', e)
     }
   }
 
   const isUserNearBottom = (threshold = 100) => {
     const container = messagesContainerRef.current
     if (!container) return true
-    return (
-      container.scrollHeight - container.scrollTop - container.clientHeight <=
-      threshold
-    )
+    return container.scrollHeight - container.scrollTop - container.clientHeight <= threshold
   }
 
   const userAtBottomRef = useRef(true)
@@ -109,9 +98,7 @@ export default function ChatPage() {
       try {
         const chatDetails = await getChatDetails(chatId)
         if (chatDetails) {
-          const otherId = chatDetails.participants.find(
-            (id: string) => id !== user.uid,
-          )
+          const otherId = chatDetails.participants.find((id: string) => id !== user.uid)
           if (otherId) {
             setOtherUserId(otherId)
             const [otherProfile, currentProfile] = await Promise.all([
@@ -120,30 +107,27 @@ export default function ChatPage() {
             ])
             setOtherUserName(otherProfile.displayName)
             setOtherUserImage(otherProfile.profileImage)
-            setOtherUserStatus(otherProfile.status || "offline")
+            setOtherUserStatus(otherProfile.status || 'offline')
             setIsBlocked(currentProfile.blocked?.includes(otherId) || false)
             setIsFriend(currentProfile.friends?.includes(otherId) || false)
           }
         }
         const msgs = await getMessages(chatId)
         console.log(
-          "Messages received:",
-          msgs.filter((m: any) => m.deleted),
+          'Messages received:',
+          msgs.filter((m: any) => m.deleted)
         )
         setMessages(msgs)
         // Remember last message id and attempt an initial scroll (a couple tries
         // help with production layout timing without forcing scroll on user).
         lastMessageIdRef.current = msgs.length ? msgs[msgs.length - 1].id : null
-        setTimeout(() => scrollToBottom("auto"), 50)
-        setTimeout(() => scrollToBottom("auto"), 300)
+        setTimeout(() => scrollToBottom('auto'), 50)
+        setTimeout(() => scrollToBottom('auto'), 300)
 
         // Mark chat as read and messages as seen
-        await Promise.all([
-          markChatAsRead(chatId, user.uid),
-          markMessagesAsSeen(chatId, user.uid),
-        ])
+        await Promise.all([markChatAsRead(chatId, user.uid), markMessagesAsSeen(chatId, user.uid)])
       } catch (error) {
-        console.error("Error fetching chat data:", error)
+        console.error('Error fetching chat data:', error)
       }
     }
     fetchChatData()
@@ -153,21 +137,21 @@ export default function ChatPage() {
         const msgs = await getMessages(chatId)
         setMessages((prev) => {
           // Keep optimistic messages that haven't been confirmed yet
-          const optimisticMsgs = prev.filter(m => m.id.startsWith("optimistic-"))
+          const optimisticMsgs = prev.filter((m) => m.id.startsWith('optimistic-'))
           // Merge with real messages, avoiding duplicates
           return [...msgs, ...optimisticMsgs]
         })
-        
+
         // Update other user's status
         if (otherUserId) {
           try {
-            const otherProfile = await getUserProfile(otherUserId, user.uid);
-            setOtherUserStatus(otherProfile.status || "offline");
+            const otherProfile = await getUserProfile(otherUserId, user.uid)
+            setOtherUserStatus(otherProfile.status || 'offline')
           } catch (error) {
-            console.error("Failed to fetch user status:", error);
+            console.error('Failed to fetch user status:', error)
           }
         }
-        
+
         if (!document.hidden) {
           await Promise.all([
             markChatAsRead(chatId, user.uid),
@@ -175,7 +159,7 @@ export default function ChatPage() {
           ])
         }
       } catch (error) {
-        console.error("Error polling messages:", error)
+        console.error('Error polling messages:', error)
       }
     }, 2000)
 
@@ -203,10 +187,10 @@ export default function ChatPage() {
 
     if (isNewMessage) {
       if (userAtBottomRef.current) {
-        scrollToBottom("smooth")
+        scrollToBottom('smooth')
       } else {
         autoScrollTimerRef.current = setTimeout(() => {
-          if (isUserNearBottom()) scrollToBottom("smooth")
+          if (isUserNearBottom()) scrollToBottom('smooth')
           autoScrollTimerRef.current = null
         }, 150)
       }
@@ -238,10 +222,10 @@ export default function ChatPage() {
       userAtBottomRef.current = nearBottom
       setShowScrollDown(messagesScrolledPast >= 10 && messages.length > 0)
     }
-    container.addEventListener("scroll", onScroll, { passive: true })
+    container.addEventListener('scroll', onScroll, { passive: true })
     // initialize
     onScroll()
-    return () => container.removeEventListener("scroll", onScroll)
+    return () => container.removeEventListener('scroll', onScroll)
   }, [messages])
 
   // Poll for typing status
@@ -274,29 +258,24 @@ export default function ChatPage() {
       id: optimisticId,
       chatId,
       senderId: user.uid,
-      senderName: user.displayName || "Anonymous",
+      senderName: user.displayName || 'Anonymous',
       text,
       edited: false,
       deleted: false,
       timestamp: new Date(),
     }
-    
+
     setSending(true)
     setMessages((prev) => [...prev, optimisticMessage])
-    setMessageText("")
+    setMessageText('')
 
     try {
-      const saved = await sendMessage(
-        chatId,
-        user.uid,
-        user.displayName || "Anonymous",
-        text,
-      )
+      const saved = await sendMessage(chatId, user.uid, user.displayName || 'Anonymous', text)
       // Replace optimistic message with real one
       setMessages((prev) => {
         const withoutOptimistic = prev.filter((m) => m.id !== optimisticId)
         // Check if real message already exists (from polling)
-        const realExists = withoutOptimistic.some(m => m.id === saved.id)
+        const realExists = withoutOptimistic.some((m) => m.id === saved.id)
         if (realExists) {
           return withoutOptimistic
         }
@@ -314,33 +293,28 @@ export default function ChatPage() {
     try {
       await editMessage(msgId, user.uid, editText.trim())
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === msgId ? { ...m, text: editText.trim(), edited: true } : m,
-        ),
+        prev.map((m) => (m.id === msgId ? { ...m, text: editText.trim(), edited: true } : m))
       )
     } catch (e) {
       console.error(e)
     }
     setEditingId(null)
-    setEditText("")
+    setEditText('')
   }
 
   const handleDelete = async (msgId: string) => {
     if (!user) return
     showConfirm({
-      title: "Delete Message",
-      message:
-        "Are you sure you want to delete this message? This action cannot be undone.",
-      confirmText: "Delete",
+      title: 'Delete Message',
+      message: 'Are you sure you want to delete this message? This action cannot be undone.',
+      confirmText: 'Delete',
       onConfirm: async () => {
         try {
           await deleteMessage(msgId, user.uid)
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === msgId
-                ? { ...m, text: "This message has been deleted", deleted: true }
-                : m,
-            ),
+              m.id === msgId ? { ...m, text: 'This message has been deleted', deleted: true } : m
+            )
           )
         } catch (e) {
           console.error(e)
@@ -353,9 +327,9 @@ export default function ChatPage() {
   const handleUnfriend = async () => {
     if (!user || !otherUserId) return
     showConfirm({
-      title: "Unfriend User",
-      message: "Are you sure you want to remove this person from your friends?",
-      confirmText: "Unfriend",
+      title: 'Unfriend User',
+      message: 'Are you sure you want to remove this person from your friends?',
+      confirmText: 'Unfriend',
       onConfirm: async () => {
         await unfriendUser(user.uid, otherUserId)
         setIsFriend(false)
@@ -373,10 +347,9 @@ export default function ChatPage() {
   const handleBlock = async () => {
     if (!user || !otherUserId) return
     showConfirm({
-      title: "Block User",
-      message:
-        "Are you sure you want to block this user? You won't be able to message each other.",
-      confirmText: "Block",
+      title: 'Block User',
+      message: "Are you sure you want to block this user? You won't be able to message each other.",
+      confirmText: 'Block',
       onConfirm: async () => {
         await blockUser(user.uid, otherUserId)
         setIsBlocked(true)
@@ -392,7 +365,7 @@ export default function ChatPage() {
     setShowChatMenu(false)
   }
 
-  const showSkeleton = !otherUserName || messages.length === 0;
+  const showSkeleton = !otherUserName || messages.length === 0
 
   return (
     <div
@@ -408,12 +381,7 @@ export default function ChatPage() {
           onClick={() => router.back()}
           className="p-2 hover:bg-base-300 rounded-full transition-colors md:hidden"
         >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -432,24 +400,30 @@ export default function ChatPage() {
           </>
         ) : (
           <>
-        <Image
-          width={40}
-          height={40}
-          className="rounded-full cursor-pointer hover:opacity-80 transition-opacity"
-          src={otherUserImage}
-          alt={otherUserName}
-          onClick={(e) => {
-            e.stopPropagation()
-            router.push(`/user/${otherUserId}`)
-          }}
-        />
-        <div className="flex-1">
-          <h2 className="font-semibold text-base-content">{otherUserName}</h2>
-          <p className="text-xs text-base-content/70">
-            {isTyping ? "typing..." : otherUserStatus === "online" ? "Online" : otherUserStatus === "away" ? "Away" : "Offline"}
-          </p>
-        </div>
-        </>
+            <Image
+              width={40}
+              height={40}
+              className="rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+              src={otherUserImage}
+              alt={otherUserName}
+              onClick={(e) => {
+                e.stopPropagation()
+                router.push(`/user/${otherUserId}`)
+              }}
+            />
+            <div className="flex-1">
+              <h2 className="font-semibold text-base-content">{otherUserName}</h2>
+              <p className="text-xs text-base-content/70">
+                {isTyping
+                  ? 'typing...'
+                  : otherUserStatus === 'online'
+                    ? 'Online'
+                    : otherUserStatus === 'away'
+                      ? 'Away'
+                      : 'Offline'}
+              </p>
+            </div>
+          </>
         )}
         {/* Chat options menu */}
         <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -512,7 +486,7 @@ export default function ChatPage() {
       {showScrollDown && (
         <button
           onClick={() => {
-            scrollToBottom("smooth")
+            scrollToBottom('smooth')
             setShowScrollDown(false)
           }}
           aria-label="Scroll to latest messages"
@@ -542,7 +516,9 @@ export default function ChatPage() {
           <div className="flex flex-col space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] p-3 rounded-2xl ${i % 2 === 0 ? 'bg-primary/20' : 'bg-base-200'} animate-pulse`}>
+                <div
+                  className={`max-w-[70%] p-3 rounded-2xl ${i % 2 === 0 ? 'bg-primary/20' : 'bg-base-200'} animate-pulse`}
+                >
                   <div className="h-4 bg-base-300 rounded w-48 mb-2" />
                   <div className="h-3 bg-base-300 rounded w-32" />
                 </div>
@@ -551,16 +527,14 @@ export default function ChatPage() {
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-base-content/50">
-              No messages yet. Start the conversation!
-            </p>
+            <p className="text-base-content/50">No messages yet. Start the conversation!</p>
           </div>
         ) : (
           messages.map((message) => {
             const isOwn = message.senderId === user?.uid
             const isDeleted = message.deleted === true
-            if (message.text === "This message has been deleted") {
-              console.log("Deleted message check:", {
+            if (message.text === 'This message has been deleted') {
+              console.log('Deleted message check:', {
                 id: message.id,
                 deleted: message.deleted,
                 isDeleted,
@@ -568,75 +542,63 @@ export default function ChatPage() {
               })
             }
             return (
-              <div
-                key={message.id}
-                className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
-              >
+              <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                 <div className="relative group max-w-xs md:max-w-md break-words">
                   {/* Desktop: Three-dot menu trigger */}
-                  {isOwn &&
-                    !message.id.startsWith("optimistic-") &&
-                    !isDeleted && (
-                      <div
-                        className="hidden md:block absolute -left-8 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          onClick={() =>
-                            setMenuMsgId(
-                              menuMsgId === message.id ? null : message.id,
-                            )
-                          }
-                          className="p-1 hover:bg-base-300 rounded-full"
-                        >
-                          <svg
-                            className="w-4 h-4 text-base-content/50"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle cx="12" cy="5" r="1.5" />
-                            <circle cx="12" cy="12" r="1.5" />
-                            <circle cx="12" cy="19" r="1.5" />
-                          </svg>
-                        </button>
-                        {menuMsgId === message.id && (
-                          <div className="absolute right-full mr-2 top-0 bg-base-200 border border-base-300 rounded-lg shadow-lg z-50 min-w-[100px]">
-                            <button
-                              onClick={() => {
-                                setEditingId(message.id)
-                                setEditText(message.text)
-                                setMenuMsgId(null)
-                              }}
-                              className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-base-content transition-colors"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(message.id)}
-                              className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-red-500 transition-colors"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                  {editingId === message.id ? (
+                  {isOwn && !message.id.startsWith('optimistic-') && !isDeleted && (
                     <div
-                      className="flex gap-2 items-end"
+                      className="hidden md:block absolute -left-8 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => e.stopPropagation()}
                     >
+                      <button
+                        onClick={() => setMenuMsgId(menuMsgId === message.id ? null : message.id)}
+                        className="p-1 hover:bg-base-300 rounded-full"
+                      >
+                        <svg
+                          className="w-4 h-4 text-base-content/50"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle cx="12" cy="5" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="12" cy="19" r="1.5" />
+                        </svg>
+                      </button>
+                      {menuMsgId === message.id && (
+                        <div className="absolute right-full mr-2 top-0 bg-base-200 border border-base-300 rounded-lg shadow-lg z-50 min-w-[100px]">
+                          <button
+                            onClick={() => {
+                              setEditingId(message.id)
+                              setEditText(message.text)
+                              setMenuMsgId(null)
+                            }}
+                            className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-base-content transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(message.id)}
+                            className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-red-500 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {editingId === message.id ? (
+                    <div className="flex gap-2 items-end" onClick={(e) => e.stopPropagation()}>
                       <textarea
                         autoFocus
                         value={editText}
                         onChange={(e) => setEditText(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
+                          if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault()
                             handleEdit(message.id)
                           }
-                          if (e.key === "Escape") setEditingId(null)
+                          if (e.key === 'Escape') setEditingId(null)
                         }}
                         className="bg-base-300 text-base-content px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none min-h-[40px] max-h-[200px]"
                         rows={2}
@@ -659,40 +621,30 @@ export default function ChatPage() {
                       <div
                         className={`px-4 py-2 rounded-lg transition-opacity break-words ${
                           isDeleted
-                            ? "bg-base-200 text-base-content/60 italic"
+                            ? 'bg-base-200 text-base-content/60 italic'
                             : isOwn
-                              ? "bg-primary text-primary-content"
-                              : "bg-base-300 text-base-content"
+                              ? 'bg-primary text-primary-content'
+                              : 'bg-base-300 text-base-content'
                         }`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          if (
-                            isOwn &&
-                            !message.id.startsWith("optimistic-") &&
-                            !isDeleted
-                          ) {
-                            setMenuMsgId(
-                              menuMsgId === message.id ? null : message.id,
-                            )
+                          if (isOwn && !message.id.startsWith('optimistic-') && !isDeleted) {
+                            setMenuMsgId(menuMsgId === message.id ? null : message.id)
                           }
                         }}
                       >
-                        <p className="whitespace-pre-wrap break-words">
-                          {message.text}
-                        </p>
+                        <p className="whitespace-pre-wrap break-words">{message.text}</p>
                         <p
-                          className={`text-xs mt-1 ${isOwn && !isDeleted ? "text-primary-content/70" : "text-base-content/50"}`}
+                          className={`text-xs mt-1 ${isOwn && !isDeleted ? 'text-primary-content/70' : 'text-base-content/50'}`}
                         >
-                          {new Date(message.timestamp).toLocaleTimeString(
-                            [],
-                            { hour: "2-digit", minute: "2-digit" },
-                          )}
-                          {message.edited && !isDeleted && (
-                            <span className="ml-1">(edited)</span>
-                          )}
+                          {new Date(message.timestamp).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                          {message.edited && !isDeleted && <span className="ml-1">(edited)</span>}
                           {isOwn &&
                             !isDeleted &&
-                            !message.id.startsWith("optimistic-") &&
+                            !message.id.startsWith('optimistic-') &&
                             message.seenBy?.includes(otherUserId) && (
                               <span className="ml-2">· Seen</span>
                             )}
@@ -701,7 +653,7 @@ export default function ChatPage() {
 
                       {/* Mobile: Icon buttons - only show when clicked */}
                       {isOwn &&
-                        !message.id.startsWith("optimistic-") &&
+                        !message.id.startsWith('optimistic-') &&
                         !isDeleted &&
                         menuMsgId === message.id && (
                           <div className="md:hidden absolute -bottom-7 right-0 flex gap-3 mb-3">
@@ -762,19 +714,19 @@ export default function ChatPage() {
         {/* Typing indicator */}
         {isTyping && (
           <div className="flex justify-start mb-4">
-            <div className="bg-base-300 px-4 py-2.5 md:px-4 md:py-3 rounded-lg">
-              <div className="flex gap-1 md:gap-1.5">
+            <div className="px-5 py-3 md:px-5 md:py-3.5 rounded-lg">
+              <div className="flex gap-1.5 md:gap-2">
                 <div
-                  className="w-1 h-1 md:w-2.5 md:h-2.5 bg-base-content/60 rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
+                  className="w-1.5 h-1.5 md:w-3 md:h-3 bg-base-content/60 rounded-full animate-bounce"
+                  style={{ animationDelay: '0ms' }}
                 ></div>
                 <div
-                  className="w-1 h-1 md:w-2.5 md:h-2.5 bg-base-content/60 rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
+                  className="w-1.5 h-1.5 md:w-3 md:h-3 bg-base-content/60 rounded-full animate-bounce"
+                  style={{ animationDelay: '150ms' }}
                 ></div>
                 <div
-                  className="w-1 h-1 md:w-2.5 md:h-2.5 bg-base-content/60 rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
+                  className="w-1.5 h-1.5 md:w-3 md:h-3 bg-base-content/60 rounded-full animate-bounce"
+                  style={{ animationDelay: '300ms' }}
                 ></div>
               </div>
             </div>
@@ -784,10 +736,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <form
-        onSubmit={handleSendMessage}
-        className="bg-base-100 p-4 flex gap-3 shrink-0 items-end"
-      >
+      <form onSubmit={handleSendMessage} className="bg-base-100 p-4 flex gap-3 shrink-0 items-end">
         <textarea
           value={messageText}
           onChange={(e) => {
@@ -810,17 +759,13 @@ export default function ChatPage() {
             }
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault()
               if (user) updateTypingStatus(chatId, user.uid, false)
               handleSendMessage(e as any)
             }
           }}
-          placeholder={
-            isFriend
-              ? "Type a message..."
-              : "You must be friends to send messages"
-          }
+          placeholder={isFriend ? 'Type a message...' : 'You must be friends to send messages'}
           className="flex-1 bg-base-300 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary min-w-0 resize-none min-h-[44px] max-h-[120px]"
           disabled={sending || !isFriend}
           rows={1}
