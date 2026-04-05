@@ -390,7 +390,7 @@ export default function ChatPage() {
     setShowChatMenu(false)
   }
 
-  const showSkeleton = false
+  const showSkeleton = messages.length === 0 && !otherUserName
 
   return (
     <div
