@@ -76,7 +76,7 @@ export default function ChatsList() {
       return timeB - timeA
     })
 
-  const showSkeleton = chats.length === 0;
+  const showSkeleton = chats.length === 0 && typeof window !== 'undefined' && !localStorage.getItem('chats_list');
 
   return (
     <div className="h-full flex flex-col">

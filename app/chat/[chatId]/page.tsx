@@ -390,7 +390,7 @@ export default function ChatPage() {
     setShowChatMenu(false)
   }
 
-  const showSkeleton = messages.length === 0 && !otherUserName
+  const showSkeleton = messages.length === 0 && !otherUserName && typeof window !== 'undefined' && !localStorage.getItem(`chat_${chatId}`) && !localStorage.getItem(`chat_details_${chatId}`)
 
   return (
     <div

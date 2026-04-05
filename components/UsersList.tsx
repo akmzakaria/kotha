@@ -107,7 +107,7 @@ export default function UsersList() {
   const filteredUsers = users.filter((u) => !currentProfile?.blocked?.includes(u.uid))
     .filter((u) => u.displayName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const showSkeleton = users.length === 0 && !currentProfile;
+  const showSkeleton = users.length === 0 && !currentProfile && typeof window !== 'undefined' && !localStorage.getItem('users_list');
 
   return (
     <div className="h-full flex flex-col">
