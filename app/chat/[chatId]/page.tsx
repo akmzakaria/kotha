@@ -151,7 +151,12 @@ export default function ChatPage() {
     const interval = setInterval(async () => {
       try {
         const msgs = await getMessages(chatId)
-        setMessages(msgs)
+        setMessages((prev) => {
+          // Keep optimistic messages that haven't been confirmed yet
+          const optimisticMsgs = prev.filter(m => m.id.startsWith("optimistic-"))
+          // Merge with real messages, avoiding duplicates
+          return [...msgs, ...optimisticMsgs]
+        })
         
         // Update other user's status
         if (otherUserId) {
@@ -287,13 +292,16 @@ export default function ChatPage() {
         user.displayName || "Anonymous",
         text,
       )
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === optimisticId
-            ? { ...saved, timestamp: new Date(saved.timestamp) }
-            : m,
-        ),
-      )
+      // Replace optimistic message with real one
+      setMessages((prev) => {
+        const withoutOptimistic = prev.filter((m) => m.id !== optimisticId)
+        // Check if real message already exists (from polling)
+        const realExists = withoutOptimistic.some(m => m.id === saved.id)
+        if (realExists) {
+          return withoutOptimistic
+        }
+        return [...withoutOptimistic, { ...saved, timestamp: new Date(saved.timestamp) }]
+      })
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
       setMessageText(text)
@@ -655,7 +663,7 @@ export default function ChatPage() {
                             : isOwn
                               ? "bg-primary text-primary-content"
                               : "bg-base-300 text-base-content"
-                        } ${message.id.startsWith("optimistic-") ? "opacity-70" : "opacity-100"}`}
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation()
                           if (
@@ -675,17 +683,16 @@ export default function ChatPage() {
                         <p
                           className={`text-xs mt-1 ${isOwn && !isDeleted ? "text-primary-content/70" : "text-base-content/50"}`}
                         >
-                          {message.id.startsWith("optimistic-")
-                            ? "Sending..."
-                            : new Date(message.timestamp).toLocaleTimeString(
-                                [],
-                                { hour: "2-digit", minute: "2-digit" },
-                              )}
+                          {new Date(message.timestamp).toLocaleTimeString(
+                            [],
+                            { hour: "2-digit", minute: "2-digit" },
+                          )}
                           {message.edited && !isDeleted && (
                             <span className="ml-1">(edited)</span>
                           )}
                           {isOwn &&
                             !isDeleted &&
+                            !message.id.startsWith("optimistic-") &&
                             message.seenBy?.includes(otherUserId) && (
                               <span className="ml-2">· Seen</span>
                             )}
