@@ -32,14 +32,30 @@ export default function ChatPage() {
   const { showConfirm } = useConfirm()
   const chatId = (params?.chatId as string) || ''
 
-  const [messages, setMessages] = useState<Message[]>([])
+  // Initialize messages from cache immediately
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem(`chat_${chatId}`)
+      if (cached) {
+        try {
+          return JSON.parse(cached).map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          }))
+        } catch {
+          return []
+        }
+      }
+    }
+    return []
+  })
   const [messageText, setMessageText] = useState('')
   const [otherUserName, setOtherUserName] = useState('')
   const [otherUserImage, setOtherUserImage] = useState('/favicon.ico')
   const [otherUserId, setOtherUserId] = useState('')
   const [otherUserStatus, setOtherUserStatus] = useState<'online' | 'offline' | 'away'>('offline')
   const [isBlocked, setIsBlocked] = useState(false)
-  const [isFriend, setIsFriend] = useState(false)
+  const [isFriend, setIsFriend] = useState(true)
   const [sending, setSending] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -118,6 +134,10 @@ export default function ChatPage() {
           msgs.filter((m: any) => m.deleted)
         )
         setMessages(msgs)
+        // Save to localStorage for instant load next time
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`chat_${chatId}`, JSON.stringify(msgs))
+        }
         // Remember last message id and attempt an initial scroll (a couple tries
         // help with production layout timing without forcing scroll on user).
         lastMessageIdRef.current = msgs.length ? msgs[msgs.length - 1].id : null
@@ -134,12 +154,17 @@ export default function ChatPage() {
 
     const interval = setInterval(async () => {
       try {
-        const msgs = await getMessages(chatId)
+        const msgs = await getMessages(chatId, true)
         setMessages((prev) => {
           // Keep optimistic messages that haven't been confirmed yet
           const optimisticMsgs = prev.filter((m) => m.id.startsWith('optimistic-'))
           // Merge with real messages, avoiding duplicates
-          return [...msgs, ...optimisticMsgs]
+          const updated = [...msgs, ...optimisticMsgs]
+          // Save to localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`chat_${chatId}`, JSON.stringify(msgs))
+          }
+          return updated
         })
 
         // Update other user's status
@@ -365,7 +390,7 @@ export default function ChatPage() {
     setShowChatMenu(false)
   }
 
-  const showSkeleton = !otherUserName || messages.length === 0
+  const showSkeleton = false
 
   return (
     <div

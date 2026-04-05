@@ -1,6 +1,7 @@
 "use client";
 
 import { User as FirebaseUser } from "firebase/auth";
+import { getCache, setCache, clearCache } from "./cache";
 
 export interface ChatRoom {
   id: string;
@@ -61,18 +62,30 @@ export const createOrUpdateUserProfile = async (user: FirebaseUser) => {
 };
 
 export const getAllUsers = async (currentUserId: string): Promise<UserProfile[]> => {
+  const cacheKey = `users_${currentUserId}`;
+  const cached = getCache<UserProfile[]>(cacheKey);
+  if (cached) return cached;
+  
   const response = await fetch(`/api/users?currentUserId=${encodeURIComponent(currentUserId)}`);
   if (!response.ok) throw new Error("Failed to fetch users");
-  return response.json();
+  const data = await response.json();
+  setCache(cacheKey, data);
+  return data;
 };
 
 export const getUserProfile = async (userId: string, requesterId?: string): Promise<UserProfile> => {
+  const cacheKey = `profile_${userId}_${requesterId || 'none'}`;
+  const cached = getCache<UserProfile>(cacheKey);
+  if (cached) return cached;
+  
   const url = requesterId 
     ? `/api/users/${encodeURIComponent(userId)}?requesterId=${encodeURIComponent(requesterId)}`
     : `/api/users/${encodeURIComponent(userId)}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error("Failed to fetch user profile");
-  return response.json();
+  const data = await response.json();
+  setCache(cacheKey, data);
+  return data;
 };
 
 export const updateUserProfile = async (userId: string, data: { bio?: string; profileImage?: string; displayName?: string }) => {
@@ -153,15 +166,30 @@ export const getOrCreateChat = async (currentUserId: string, otherUserId: string
 };
 
 export const getUserChats = async (userId: string): Promise<ChatRoom[]> => {
+  const cacheKey = `chats_${userId}`;
+  const cached = getCache<ChatRoom[]>(cacheKey);
+  if (cached) return cached;
+  
   const response = await fetch(`/api/chats?userId=${encodeURIComponent(userId)}`);
   if (!response.ok) return [];
-  return response.json();
+  const data = await response.json();
+  setCache(cacheKey, data);
+  return data;
 };
 
-export const getMessages = async (chatId: string): Promise<Message[]> => {
+export const getMessages = async (chatId: string, forceRefresh = false): Promise<Message[]> => {
+  const cacheKey = `messages_${chatId}`;
+  
+  if (!forceRefresh) {
+    const cached = getCache<Message[]>(cacheKey);
+    if (cached) return cached;
+  }
+  
   const response = await fetch(`/api/messages?chatId=${encodeURIComponent(chatId)}`);
   if (!response.ok) return [];
-  return response.json();
+  const data = await response.json();
+  setCache(cacheKey, data);
+  return data;
 };
 
 export const sendMessage = async (chatId: string, senderId: string, senderName: string, text: string) => {
@@ -171,7 +199,10 @@ export const sendMessage = async (chatId: string, senderId: string, senderName: 
     body: JSON.stringify({ chatId, senderId, senderName, text }),
   });
   if (!response.ok) throw new Error("Failed to send message");
-  return response.json();
+  const data = await response.json();
+  // Clear cache so next fetch gets fresh data
+  clearCache(`messages_${chatId}`);
+  return data;
 };
 
 export const editMessage = async (messageId: string, senderId: string, text: string) => {
@@ -181,7 +212,9 @@ export const editMessage = async (messageId: string, senderId: string, text: str
     body: JSON.stringify({ messageId, senderId, text }),
   });
   if (!response.ok) throw new Error("Failed to edit message");
-  return response.json();
+  const data = await response.json();
+  // Cache will be refreshed on next fetch
+  return data;
 };
 
 export const deleteMessage = async (messageId: string, senderId: string) => {
