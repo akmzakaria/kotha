@@ -9,6 +9,8 @@ const MessageSchema = new mongoose.Schema(
     edited: { type: Boolean, default: false },
     deleted: { type: Boolean, default: false },
     seenBy: { type: [String], default: [] },
+    hiddenFor: { type: [String], default: [] },
+    replyTo: { type: String, default: null },
     timestamp: { type: Date, default: Date.now },
   },
   { timestamps: true, strict: false },

@@ -23,6 +23,7 @@ export interface Message {
   edited: boolean;
   deleted: boolean;
   seenBy?: string[];
+  replyTo?: string | null;
   timestamp: Date;
 }
 
@@ -180,7 +181,7 @@ export const getUserChats = async (userId: string, forceRefresh = false): Promis
   return data;
 };
 
-export const getMessages = async (chatId: string, forceRefresh = false): Promise<Message[]> => {
+export const getMessages = async (chatId: string, userId: string, forceRefresh = false): Promise<Message[]> => {
   const cacheKey = `messages_${chatId}`;
   
   if (!forceRefresh) {
@@ -188,18 +189,18 @@ export const getMessages = async (chatId: string, forceRefresh = false): Promise
     if (cached) return cached;
   }
   
-  const response = await fetch(`/api/messages?chatId=${encodeURIComponent(chatId)}`);
+  const response = await fetch(`/api/messages?chatId=${encodeURIComponent(chatId)}&userId=${encodeURIComponent(userId)}`);
   if (!response.ok) return [];
   const data = await response.json();
   setCache(cacheKey, data);
   return data;
 };
 
-export const sendMessage = async (chatId: string, senderId: string, senderName: string, text: string) => {
+export const sendMessage = async (chatId: string, senderId: string, senderName: string, text: string, replyTo?: string) => {
   const response = await fetch("/api/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chatId, senderId, senderName, text }),
+    body: JSON.stringify({ chatId, senderId, senderName, text, replyTo }),
   });
   if (!response.ok) throw new Error("Failed to send message");
   const data = await response.json();
@@ -276,5 +277,13 @@ export const markMessagesAsSeen = async (chatId: string, userId: string) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chatId, userId }),
+  });
+};
+
+export const hideMessage = async (messageId: string, userId: string) => {
+  await fetch("/api/messages/hide", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messageId, userId }),
   });
 };

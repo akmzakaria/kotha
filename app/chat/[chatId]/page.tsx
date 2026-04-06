@@ -18,6 +18,7 @@ import {
   getTypingUsers,
   markChatAsRead,
   markMessagesAsSeen,
+  hideMessage,
 } from '@/lib/chatService'
 import Image from 'next/image'
 import { Message } from '@/lib/chatService'
@@ -63,6 +64,7 @@ export default function ChatPage() {
   const [showChatMenu, setShowChatMenu] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null)
   const [searchMode, setSearchMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<string[]>([])
@@ -132,7 +134,7 @@ export default function ChatPage() {
             setIsFriend(currentProfile.friends?.includes(otherId) || false)
           }
         }
-        const msgs = await getMessages(chatId)
+        const msgs = await getMessages(chatId, user.uid)
         console.log(
           'Messages received:',
           msgs.filter((m: any) => m.deleted)
@@ -158,7 +160,7 @@ export default function ChatPage() {
 
     const interval = setInterval(async () => {
       try {
-        const msgs = await getMessages(chatId, true)
+        const msgs = await getMessages(chatId, user.uid, true)
         setMessages((prev) => {
           // Keep optimistic messages that haven't been confirmed yet
           const optimisticMsgs = prev.filter((m) => m.id.startsWith('optimistic-'))
@@ -291,15 +293,18 @@ export default function ChatPage() {
       text,
       edited: false,
       deleted: false,
+      replyTo: replyingTo?.id || null,
       timestamp: new Date(),
     }
 
     setSending(true)
     setMessages((prev) => [...prev, optimisticMessage])
     setMessageText('')
+    const replyToId = replyingTo?.id
+    setReplyingTo(null)
 
     try {
-      const saved = await sendMessage(chatId, user.uid, user.displayName || 'Anonymous', text)
+      const saved = await sendMessage(chatId, user.uid, user.displayName || 'Anonymous', text, replyToId)
       // Replace optimistic message with real one
       setMessages((prev) => {
         const withoutOptimistic = prev.filter((m) => m.id !== optimisticId)
@@ -710,9 +715,9 @@ export default function ChatPage() {
               <div key={message.id} id={`msg-${message.id}`} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${searchResults.includes(message.id) && searchResults[currentSearchIndex] === message.id ? 'bg-primary/10 -mx-4 px-4 py-2' : ''}`}>
                 <div className="relative group max-w-xs md:max-w-md break-words">
                   {/* Desktop: Three-dot menu trigger */}
-                  {isOwn && !message.id.startsWith('optimistic-') && !isDeleted && (
+                  {!message.id.startsWith('optimistic-') && !isDeleted && (
                     <div
-                      className="hidden md:block absolute -left-8 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute -left-8 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -733,20 +738,52 @@ export default function ChatPage() {
                         <div className="absolute right-full mr-2 top-0 bg-base-200 border border-base-300 rounded-lg shadow-lg z-50 min-w-[100px]">
                           <button
                             onClick={() => {
-                              setEditingId(message.id)
-                              setEditText(message.text)
+                              setReplyingTo(message)
                               setMenuMsgId(null)
                             }}
                             className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-base-content transition-colors"
                           >
-                            Edit
+                            Reply
                           </button>
-                          <button
-                            onClick={() => handleDelete(message.id)}
-                            className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-red-500 transition-colors"
-                          >
-                            Delete
-                          </button>
+                          {isOwn && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingId(message.id)
+                                  setEditText(message.text)
+                                  setMenuMsgId(null)
+                                }}
+                                className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-base-content transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(message.id)}
+                                className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-red-500 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                          {!isOwn && (
+                            <button
+                              onClick={() => {
+                                showConfirm({
+                                  title: 'Hide Message',
+                                  message: 'Are you sure you want to hide this message? It will only be hidden for you.',
+                                  confirmText: 'Hide',
+                                  onConfirm: async () => {
+                                    await hideMessage(message.id, user!.uid)
+                                    setMessages(prev => prev.filter(m => m.id !== message.id))
+                                    setMenuMsgId(null)
+                                  }
+                                })
+                              }}
+                              className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-base-content transition-colors"
+                            >
+                              Hide
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -793,11 +830,35 @@ export default function ChatPage() {
                         }`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          if (isOwn && !message.id.startsWith('optimistic-') && !isDeleted) {
+                          if (!message.id.startsWith('optimistic-') && !isDeleted) {
                             setMenuMsgId(menuMsgId === message.id ? null : message.id)
                           }
                         }}
                       >
+                        {message.replyTo && (
+                          <div 
+                            className={`mb-2 pb-2 border-l-2 pl-2 text-xs opacity-70 cursor-pointer hover:opacity-100 ${isOwn ? 'border-primary-content' : 'border-base-content'}`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const repliedMsgElement = document.getElementById(`msg-${message.replyTo}`)
+                              if (repliedMsgElement) {
+                                repliedMsgElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                                repliedMsgElement.classList.add('bg-primary/20')
+                                setTimeout(() => repliedMsgElement.classList.remove('bg-primary/20'), 2000)
+                              }
+                            }}
+                          >
+                            {(() => {
+                              const repliedMsg = messages.find(m => m.id === message.replyTo)
+                              return repliedMsg ? (
+                                <>
+                                  <p className="font-semibold">{repliedMsg.senderName}</p>
+                                  <p className="truncate">{repliedMsg.text}</p>
+                                </>
+                              ) : <p>Message not found</p>
+                            })()}
+                          </div>
+                        )}
                         <p className="whitespace-pre-wrap break-words">
                           {searchQuery && searchResults.includes(message.id) 
                             ? highlightText(message.text, searchQuery)
@@ -822,55 +883,92 @@ export default function ChatPage() {
                       </div>
 
                       {/* Mobile: Icon buttons - only show when clicked */}
-                      {isOwn &&
-                        !message.id.startsWith('optimistic-') &&
+                      {!message.id.startsWith('optimistic-') &&
                         !isDeleted &&
                         menuMsgId === message.id && (
                           <div className="md:hidden absolute -bottom-7 right-0 flex gap-3 mb-3">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setEditingId(message.id)
-                                setEditText(message.text)
+                                setReplyingTo(message)
                                 setMenuMsgId(null)
                               }}
                               className="hover:opacity-70 transition-opacity"
                             >
-                              <svg
-                                className="w-4 h-4 text-base-content"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                />
+                              <svg className="w-4 h-4 text-base-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                               </svg>
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDelete(message.id)
-                              }}
-                              className="hover:opacity-70 transition-opacity"
-                            >
-                              <svg
-                                className="w-4 h-4 text-red-500"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                            {isOwn && (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setEditingId(message.id)
+                                    setEditText(message.text)
+                                    setMenuMsgId(null)
+                                  }}
+                                  className="hover:opacity-70 transition-opacity"
+                                >
+                                  <svg
+                                    className="w-4 h-4 text-base-content"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                    />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDelete(message.id)
+                                  }}
+                                  className="hover:opacity-70 transition-opacity"
+                                >
+                                  <svg
+                                    className="w-4 h-4 text-red-500"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                    />
+                                  </svg>
+                                </button>
+                              </>
+                            )}
+                            {!isOwn && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  showConfirm({
+                                    title: 'Hide Message',
+                                    message: 'Are you sure you want to hide this message? It will only be hidden for you.',
+                                    confirmText: 'Hide',
+                                    onConfirm: async () => {
+                                      await hideMessage(message.id, user!.uid)
+                                      setMessages(prev => prev.filter(m => m.id !== message.id))
+                                      setMenuMsgId(null)
+                                    }
+                                  })
+                                }}
+                                className="hover:opacity-70 transition-opacity"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                            </button>
+                                <svg className="w-4 h-4 text-base-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         )}
                     </>
@@ -906,7 +1004,21 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSendMessage} className="bg-base-100 p-4 flex gap-3 shrink-0 items-end">
+      <div className="bg-base-100 shrink-0">
+        {replyingTo && (
+          <div className="px-4 pt-2 pb-1 border-t border-base-300 flex items-center justify-between bg-base-200">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-base-content/70">Replying to {replyingTo.senderName}</p>
+              <p className="text-sm text-base-content truncate">{replyingTo.text}</p>
+            </div>
+            <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-base-300 rounded-full ml-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+        <form onSubmit={handleSendMessage} className="p-4 flex gap-3 items-end">
         <textarea
           value={messageText}
           onChange={(e) => {
@@ -947,7 +1059,8 @@ export default function ChatPage() {
         >
           Send
         </button>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }

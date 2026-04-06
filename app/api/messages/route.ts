@@ -8,21 +8,24 @@ export async function GET(request: NextRequest) {
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const chatId = searchParams.get("chatId");
+    const userId = searchParams.get("userId");
     if (!chatId) return NextResponse.json({ error: "Chat ID is required" }, { status: 400 });
 
     const messages = await Message.find({ chatId }).sort({ timestamp: 1 }).lean();
-    const formattedMessages = messages.map((msg: any) => ({
-      id: msg._id.toString(),
-      chatId: msg.chatId,
-      senderId: msg.senderId,
-      senderName: msg.senderName,
-      text: msg.text,
-      edited: Boolean(msg.edited),
-      deleted: Boolean(msg.deleted),
-      seenBy: msg.seenBy || [],
-      timestamp: msg.timestamp,
-    }));
-    console.log('Messages from DB:', formattedMessages.filter((m: any) => m.deleted));
+    const formattedMessages = messages
+      .filter((msg: any) => !msg.hiddenFor?.includes(userId))
+      .map((msg: any) => ({
+        id: msg._id.toString(),
+        chatId: msg.chatId,
+        senderId: msg.senderId,
+        senderName: msg.senderName,
+        text: msg.text,
+        edited: Boolean(msg.edited),
+        deleted: Boolean(msg.deleted),
+        seenBy: msg.seenBy || [],
+        replyTo: msg.replyTo || null,
+        timestamp: msg.timestamp,
+      }));
     return NextResponse.json(formattedMessages);
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
@@ -32,7 +35,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
-    const { chatId, senderId, senderName, text } = await request.json();
+    const { chatId, senderId, senderName, text, replyTo } = await request.json();
     if (!chatId || !senderId || !senderName || !text)
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 
@@ -49,7 +52,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const message = await Message.create({ chatId, senderId, senderName, text, timestamp: new Date() });
+    const message = await Message.create({ 
+      chatId, 
+      senderId, 
+      senderName, 
+      text, 
+      replyTo: replyTo || null,
+      timestamp: new Date() 
+    });
     
     // Increment unread count for receiver
     const updateObj: any = { lastMessage: text, lastMessageTime: new Date() };
@@ -66,6 +76,7 @@ export async function POST(request: NextRequest) {
       text: message.text,
       edited: false,
       deleted: false,
+      replyTo: message.replyTo || null,
       timestamp: message.timestamp,
     });
   } catch (error) {
