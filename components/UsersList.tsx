@@ -140,7 +140,7 @@ export default function UsersList() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="sticky top-0 bg-base-100 z-10 p-3 md:p-4 pb-2">
+      <div className="sticky top-0 bg-base-100 z-10 pt-3 md:pt-4 px-4 md:px-6 pb-2">
         <div className="flex justify-between items-center mb-3">
           <h1 className="text-3xl font-bold">Users</h1>
           <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-base-200 rounded-full transition-colors">
