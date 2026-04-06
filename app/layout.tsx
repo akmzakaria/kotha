@@ -34,6 +34,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const theme = localStorage.getItem('theme') || 'dark';
+                document.documentElement.style.backgroundColor = theme === 'light' ? '#f8f9fa' : '#1A2421';
+                document.documentElement.setAttribute('data-theme', theme);
+              })();
+            `,
+          }}
+        />
         <link rel="prefetch" href="/chats" />
         <link rel="prefetch" href="/users" />
         <link rel="prefetch" href="/friends" />
