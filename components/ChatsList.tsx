@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import { useAuth } from "@/app/context/AuthContext"
-import { getUserChats } from "@/lib/chatService"
+import { getUserChats, getUserProfile } from "@/lib/chatService"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ChatRoom } from "@/lib/chatService"
@@ -26,6 +26,7 @@ export default function ChatsList() {
     }
     return []
   })
+  const [userStatuses, setUserStatuses] = useState<Record<string, 'online' | 'offline' | 'away'>>({})
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -49,6 +50,23 @@ export default function ChatsList() {
         if (typeof window !== 'undefined') {
           localStorage.setItem('chats_list', JSON.stringify(sortedChats))
         }
+
+        // Fetch user statuses
+        const statuses: Record<string, 'online' | 'offline' | 'away'> = {}
+        await Promise.all(
+          sortedChats.map(async (chat) => {
+            const otherUserId = chat.participants.find((id) => id !== user.uid)
+            if (otherUserId) {
+              try {
+                const profile = await getUserProfile(otherUserId, user.uid)
+                statuses[otherUserId] = profile.status || 'offline'
+              } catch {
+                statuses[otherUserId] = 'offline'
+              }
+            }
+          })
+        )
+        setUserStatuses(statuses)
       } catch (error) {
         console.error("Error fetching data:", error)
       }
@@ -167,6 +185,7 @@ export default function ChatsList() {
               : `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUserName}`
             const unreadCount = chat.unreadCount?.[user?.uid || ""] || 0
             const hasUnread = unreadCount > 0
+            const userStatus = otherUserId ? userStatuses[otherUserId] || 'offline' : 'offline'
 
             return (
               <div
@@ -176,7 +195,7 @@ export default function ChatsList() {
                 }`}
               >
                 <div
-                  className="shrink-0 cursor-pointer"
+                  className="relative shrink-0 cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation()
                     router.push(`/user/${otherUserId}`)
@@ -189,6 +208,9 @@ export default function ChatsList() {
                     src={profileImage}
                     alt={otherUserName}
                   />
+                  <div className={`absolute bottom-0 right-0 w-3 h-3 ${
+                    userStatus === "online" ? "bg-green-500" : userStatus === "away" ? "bg-yellow-500" : "bg-gray-500"
+                  } rounded-full border-2 border-base-100`} />
                 </div>
 
                 <div
