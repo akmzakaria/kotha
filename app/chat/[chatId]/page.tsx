@@ -707,7 +707,7 @@ export default function ChatPage() {
               })
             }
             return (
-              <div key={message.id} id={`msg-${message.id}`} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              <div key={message.id} id={`msg-${message.id}`} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${searchResults.includes(message.id) && searchResults[currentSearchIndex] === message.id ? 'bg-primary/10 -mx-4 px-4 py-2' : ''}`}>
                 <div className="relative group max-w-xs md:max-w-md break-words">
                   {/* Desktop: Three-dot menu trigger */}
                   {isOwn && !message.id.startsWith('optimistic-') && !isDeleted && (
@@ -790,7 +790,7 @@ export default function ChatPage() {
                             : isOwn
                               ? 'bg-primary text-primary-content'
                               : 'bg-base-300 text-base-content'
-                        } ${searchResults.includes(message.id) && searchResults[currentSearchIndex] === message.id ? 'ring-2 ring-yellow-400' : ''}`}
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation()
                           if (isOwn && !message.id.startsWith('optimistic-') && !isDeleted) {
