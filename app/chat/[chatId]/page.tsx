@@ -608,37 +608,37 @@ export default function ChatPage() {
               performSearch(e.target.value)
             }}
             placeholder="Search messages..."
-            className="flex-1 bg-base-100 text-base-content px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="flex-1 min-w-0 bg-base-100 text-base-content px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
             autoFocus
           />
           {searchResults.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-base-content/70">
-                {currentSearchIndex + 1} / {searchResults.length}
-              </span>
+            <>
               <button
                 onClick={handlePrevResult}
-                className="p-1.5 hover:bg-base-300 rounded-full transition-colors"
+                className="p-2 hover:bg-base-300 rounded-full transition-colors shrink-0"
                 title="Previous"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                 </svg>
               </button>
+              <span className="text-xs text-base-content/70 whitespace-nowrap shrink-0">
+                {currentSearchIndex + 1}/{searchResults.length}
+              </span>
               <button
                 onClick={handleNextResult}
-                className="p-1.5 hover:bg-base-300 rounded-full transition-colors"
+                className="p-2 hover:bg-base-300 rounded-full transition-colors shrink-0"
                 title="Next"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-            </div>
+            </>
           )}
           <button
             onClick={closeSearch}
-            className="p-1.5 hover:bg-base-300 rounded-full transition-colors"
+            className="p-2 hover:bg-base-300 rounded-full transition-colors shrink-0"
             title="Close"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
