@@ -714,10 +714,10 @@ export default function ChatPage() {
             return (
               <div key={message.id} id={`msg-${message.id}`} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${searchResults.includes(message.id) && searchResults[currentSearchIndex] === message.id ? 'bg-primary/10 -mx-4 px-4 py-2' : ''}`}>
                 <div className="relative group max-w-xs md:max-w-md break-words">
-                  {/* Desktop: Three-dot menu trigger */}
+                  {/* Three-dot menu trigger */}
                   {!message.id.startsWith('optimistic-') && !isDeleted && (
                     <div
-                      className="absolute -left-8 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className={`absolute ${isOwn ? '-left-8' : '-right-8'} top-1 opacity-0 group-hover:opacity-100 transition-opacity`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -735,7 +735,7 @@ export default function ChatPage() {
                         </svg>
                       </button>
                       {menuMsgId === message.id && (
-                        <div className="absolute right-full mr-2 top-0 bg-base-200 border border-base-300 rounded-lg shadow-lg z-50 min-w-[100px]">
+                        <div className={`absolute ${isOwn ? 'right-full mr-2' : 'left-full ml-2'} top-0 bg-base-200 border border-base-300 rounded-lg shadow-lg z-50 min-w-[100px]`}>
                           <button
                             onClick={() => {
                               setReplyingTo(message)
