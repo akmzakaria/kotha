@@ -244,8 +244,8 @@ export const updateUserStatus = async (userId: string, status: "online" | "offli
   });
 };
 
-export const subscribeToMessages = (chatId: string, callback: (messages: Message[]) => void) => {
-  getMessages(chatId).then(callback);
+export const subscribeToMessages = (chatId: string, userId: string, callback: (messages: Message[]) => void) => {
+  getMessages(chatId, userId).then(callback);
   return () => {};
 };
 

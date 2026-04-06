@@ -844,8 +844,8 @@ export default function ChatPage() {
                               const repliedMsgElement = document.getElementById(`msg-${message.replyTo}`)
                               if (repliedMsgElement) {
                                 repliedMsgElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                                repliedMsgElement.classList.add('bg-primary/20')
-                                setTimeout(() => repliedMsgElement.classList.remove('bg-primary/20'), 2000)
+                                repliedMsgElement.classList.add('bg-primary/10', '-mx-4', 'px-4', 'py-2')
+                                setTimeout(() => repliedMsgElement.classList.remove('bg-primary/10', '-mx-4', 'px-4', 'py-2'), 5000)
                               }
                             }}
                           >
