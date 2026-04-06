@@ -717,7 +717,7 @@ export default function ChatPage() {
                   {/* Three-dot menu trigger */}
                   {!message.id.startsWith('optimistic-') && !isDeleted && (
                     <div
-                      className={`absolute ${isOwn ? '-left-8' : '-right-8'} top-1 opacity-0 group-hover:opacity-100 transition-opacity`}
+                      className={`absolute ${isOwn ? '-left-8' : '-right-8'} top-1 transition-opacity ${menuMsgId === message.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
