@@ -717,7 +717,7 @@ export default function ChatPage() {
                   {/* Three-dot menu trigger */}
                   {!message.id.startsWith('optimistic-') && !isDeleted && (
                     <div
-                      className={`absolute ${isOwn ? '-left-8' : '-right-8'} top-1 transition-opacity ${menuMsgId === message.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                      className={`hidden md:block absolute ${isOwn ? '-left-8' : '-right-8'} top-1 transition-opacity ${menuMsgId === message.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -830,7 +830,8 @@ export default function ChatPage() {
                         }`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          if (!message.id.startsWith('optimistic-') && !isDeleted) {
+                          // Mobile only: click to open menu
+                          if (window.innerWidth < 768 && !message.id.startsWith('optimistic-') && !isDeleted) {
                             setMenuMsgId(menuMsgId === message.id ? null : message.id)
                           }
                         }}
