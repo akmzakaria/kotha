@@ -176,7 +176,7 @@ export default function ChatsList() {
                 }`}
               >
                 <div
-                  className="flex flex-col px-2 shrink-0 cursor-pointer"
+                  className="shrink-0 cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation()
                     router.push(`/user/${otherUserId}`)
