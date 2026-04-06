@@ -63,6 +63,10 @@ export default function ChatPage() {
   const [showChatMenu, setShowChatMenu] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [searchMode, setSearchMode] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<string[]>([])
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showScrollDown, setShowScrollDown] = useState(false)
@@ -390,6 +394,65 @@ export default function ChatPage() {
     setShowChatMenu(false)
   }
 
+  const handleSearchMessages = () => {
+    setSearchMode(true)
+    setShowChatMenu(false)
+  }
+
+  const performSearch = (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      setCurrentSearchIndex(0)
+      return
+    }
+    const results = messages
+      .filter(m => !m.deleted && m.text.toLowerCase().includes(query.toLowerCase()))
+      .map(m => m.id)
+    setSearchResults(results)
+    setCurrentSearchIndex(results.length > 0 ? 0 : -1)
+    if (results.length > 0) {
+      scrollToMessage(results[0])
+    }
+  }
+
+  const scrollToMessage = (messageId: string) => {
+    const element = document.getElementById(`msg-${messageId}`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
+  const handleNextResult = () => {
+    if (searchResults.length === 0) return
+    const nextIndex = (currentSearchIndex + 1) % searchResults.length
+    setCurrentSearchIndex(nextIndex)
+    scrollToMessage(searchResults[nextIndex])
+  }
+
+  const handlePrevResult = () => {
+    if (searchResults.length === 0) return
+    const prevIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length
+    setCurrentSearchIndex(prevIndex)
+    scrollToMessage(searchResults[prevIndex])
+  }
+
+  const closeSearch = () => {
+    setSearchMode(false)
+    setSearchQuery('')
+    setSearchResults([])
+    setCurrentSearchIndex(0)
+  }
+
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text
+    const parts = text.split(new RegExp(`(${query})`, 'gi'))
+    return parts.map((part, i) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? <mark key={i} className="bg-yellow-300 text-black">{part}</mark>
+        : part
+    )
+  }
+
   const showSkeleton = messages.length === 0 && !otherUserName && typeof window !== 'undefined' && !localStorage.getItem(`chat_${chatId}`) && !localStorage.getItem(`chat_details_${chatId}`)
 
   return (
@@ -493,6 +556,12 @@ export default function ChatPage() {
               >
                 View Profile
               </button>
+              <button
+                onClick={handleSearchMessages}
+                className="block w-full text-left px-4 py-2 hover:bg-base-300 text-sm text-base-content transition-colors"
+              >
+                Search Chat
+              </button>
               {isFriend ? (
                 <button
                   onClick={handleUnfriend}
@@ -527,6 +596,57 @@ export default function ChatPage() {
           )}
         </div>
       </div>
+
+      {/* Search Bar */}
+      {searchMode && (
+        <div className="bg-base-200 border-b border-base-300 p-3 flex items-center gap-2 shrink-0">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              performSearch(e.target.value)
+            }}
+            placeholder="Search messages..."
+            className="flex-1 bg-base-100 text-base-content px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            autoFocus
+          />
+          {searchResults.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-base-content/70">
+                {currentSearchIndex + 1} / {searchResults.length}
+              </span>
+              <button
+                onClick={handlePrevResult}
+                className="p-1.5 hover:bg-base-300 rounded-full transition-colors"
+                title="Previous"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              </button>
+              <button
+                onClick={handleNextResult}
+                className="p-1.5 hover:bg-base-300 rounded-full transition-colors"
+                title="Next"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          )}
+          <button
+            onClick={closeSearch}
+            className="p-1.5 hover:bg-base-300 rounded-full transition-colors"
+            title="Close"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {showScrollDown && (
         <button
@@ -587,7 +707,7 @@ export default function ChatPage() {
               })
             }
             return (
-              <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              <div key={message.id} id={`msg-${message.id}`} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                 <div className="relative group max-w-xs md:max-w-md break-words">
                   {/* Desktop: Three-dot menu trigger */}
                   {isOwn && !message.id.startsWith('optimistic-') && !isDeleted && (
@@ -670,7 +790,7 @@ export default function ChatPage() {
                             : isOwn
                               ? 'bg-primary text-primary-content'
                               : 'bg-base-300 text-base-content'
-                        }`}
+                        } ${searchResults.includes(message.id) && searchResults[currentSearchIndex] === message.id ? 'ring-2 ring-yellow-400' : ''}`}
                         onClick={(e) => {
                           e.stopPropagation()
                           if (isOwn && !message.id.startsWith('optimistic-') && !isDeleted) {
@@ -678,7 +798,12 @@ export default function ChatPage() {
                           }
                         }}
                       >
-                        <p className="whitespace-pre-wrap break-words">{message.text}</p>
+                        <p className="whitespace-pre-wrap break-words">
+                          {searchQuery && searchResults.includes(message.id) 
+                            ? highlightText(message.text, searchQuery)
+                            : message.text
+                          }
+                        </p>
                         <p
                           className={`text-xs mt-1 ${isOwn && !isDeleted ? 'text-primary-content/70' : 'text-base-content/50'}`}
                         >
