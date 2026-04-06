@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
-import React, { useEffect, useState } from "react"
-import { useAuth } from "@/app/context/AuthContext"
-import { getUserChats, getUserProfile } from "@/lib/chatService"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { ChatRoom } from "@/lib/chatService"
+import React, { useEffect, useState } from 'react'
+import { useAuth } from '@/app/context/AuthContext'
+import { getUserChats, getUserProfile } from '@/lib/chatService'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { ChatRoom } from '@/lib/chatService'
 
 export default function ChatsList() {
   const { user } = useAuth()
@@ -17,7 +17,7 @@ export default function ChatsList() {
         try {
           return JSON.parse(cached).map((c: any) => ({
             ...c,
-            lastMessageTime: c.lastMessageTime ? new Date(c.lastMessageTime) : null
+            lastMessageTime: c.lastMessageTime ? new Date(c.lastMessageTime) : null,
           }))
         } catch {
           return []
@@ -26,12 +26,14 @@ export default function ChatsList() {
     }
     return []
   })
-  const [userStatuses, setUserStatuses] = useState<Record<string, 'online' | 'offline' | 'away'>>({})
+  const [userStatuses, setUserStatuses] = useState<Record<string, 'online' | 'offline' | 'away'>>(
+    {}
+  )
   const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    document.title = "Chats - Kothaa"
+    document.title = 'Chats - Kothaa'
   }, [])
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function ChatsList() {
 
     const fetchData = async () => {
       try {
-        const userChats = await getUserChats(user.uid)
+        const userChats = await getUserChats(user.uid, true)
         const sortedChats = [...userChats].sort((a, b) => {
           const timeA = new Date(a.lastMessageTime).getTime()
           const timeB = new Date(b.lastMessageTime).getTime()
@@ -68,7 +70,7 @@ export default function ChatsList() {
         )
         setUserStatuses(statuses)
       } catch (error) {
-        console.error("Error fetching data:", error)
+        console.error('Error fetching data:', error)
       }
     }
 
@@ -82,7 +84,7 @@ export default function ChatsList() {
   }
 
   const formatTime = (timestamp: Date) => {
-    if (!timestamp) return ""
+    if (!timestamp) return ''
     const date = new Date(timestamp)
     const now = new Date()
     const diffInMs = now.getTime() - date.getTime()
@@ -90,7 +92,7 @@ export default function ChatsList() {
     const diffInHours = Math.floor(diffInMs / 3600000)
     const diffInDays = Math.floor(diffInMs / 86400000)
 
-    if (diffInMins < 1) return "Just now"
+    if (diffInMins < 1) return 'Just now'
     if (diffInMins < 60) return `${diffInMins}m ago`
     if (diffInHours < 24) return `${diffInHours}h ago`
     if (diffInDays < 7) return `${diffInDays}d ago`
@@ -101,7 +103,7 @@ export default function ChatsList() {
   const filteredChats = chats
     .filter((chat) => {
       const otherUserId = chat.participants.find((id) => id !== user?.uid)
-      const otherUserName = otherUserId ? chat.participantNames[otherUserId] : ""
+      const otherUserName = otherUserId ? chat.participantNames[otherUserId] : ''
       return (
         otherUserName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
@@ -113,7 +115,8 @@ export default function ChatsList() {
       return timeB - timeA
     })
 
-  const showSkeleton = chats.length === 0 && typeof window !== 'undefined' && !localStorage.getItem('chats_list');
+  const showSkeleton =
+    chats.length === 0 && typeof window !== 'undefined' && !localStorage.getItem('chats_list')
 
   return (
     <div className="h-full flex flex-col">
@@ -126,12 +129,7 @@ export default function ChatsList() {
             onClick={() => setSearchOpen(!searchOpen)}
             className="p-2 hover:bg-base-200 rounded-full transition-colors"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -170,20 +168,17 @@ export default function ChatsList() {
           ))
         ) : filteredChats.length === 0 ? (
           <p className="text-base-content/70">
-            {searchQuery
-              ? "No chats found"
-              : "No chats yet. Start by adding a user!"}
+            {searchQuery ? 'No chats found' : 'No chats yet. Start by adding a user!'}
           </p>
         ) : (
           filteredChats.map((chat) => {
             const otherUserId = chat.participants.find((id) => id !== user?.uid)
-            const otherUserName = otherUserId
-              ? chat.participantNames[otherUserId]
-              : "Unknown"
-            const profileImage = otherUserId && chat.participantImages?.[otherUserId]
-              ? chat.participantImages[otherUserId]
-              : `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUserName}`
-            const unreadCount = chat.unreadCount?.[user?.uid || ""] || 0
+            const otherUserName = otherUserId ? chat.participantNames[otherUserId] : 'Unknown'
+            const profileImage =
+              otherUserId && chat.participantImages?.[otherUserId]
+                ? chat.participantImages[otherUserId]
+                : `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUserName}`
+            const unreadCount = chat.unreadCount?.[user?.uid || ''] || 0
             const hasUnread = unreadCount > 0
             const userStatus = otherUserId ? userStatuses[otherUserId] || 'offline' : 'offline'
 
@@ -191,7 +186,7 @@ export default function ChatsList() {
               <div
                 key={chat.id}
                 className={`flex hover:bg-base-200 active:bg-base-300 transition-all duration-200 items-center rounded-xl p-2 gap-3 ${
-                  hasUnread ? "bg-primary/10" : ""
+                  hasUnread ? 'bg-primary/10' : ''
                 }`}
               >
                 <div
@@ -208,9 +203,15 @@ export default function ChatsList() {
                     src={profileImage}
                     alt={otherUserName}
                   />
-                  <div className={`absolute bottom-0 right-0 w-3 h-3 ${
-                    userStatus === "online" ? "bg-green-500" : userStatus === "away" ? "bg-yellow-500" : "bg-gray-500"
-                  } rounded-full border-2 border-base-100`} />
+                  <div
+                    className={`absolute bottom-0 right-0 w-3 h-3 ${
+                      userStatus === 'online'
+                        ? 'bg-green-500'
+                        : userStatus === 'away'
+                          ? 'bg-yellow-500'
+                          : 'bg-gray-500'
+                    } rounded-full border-2 border-base-100`}
+                  />
                 </div>
 
                 <div
@@ -219,7 +220,7 @@ export default function ChatsList() {
                 >
                   <div className="flex justify-between items-center gap-2">
                     <span
-                      className={`font-semibold text-base-content truncate ${hasUnread ? "font-bold" : ""}`}
+                      className={`font-semibold text-base-content truncate ${hasUnread ? 'font-bold' : ''}`}
                     >
                       {otherUserName}
                     </span>
@@ -235,9 +236,9 @@ export default function ChatsList() {
                     </div>
                   </div>
                   <p
-                    className={`text-sm text-base-content/70 truncate ${hasUnread ? "font-semibold" : ""}`}
+                    className={`text-sm text-base-content/70 truncate ${hasUnread ? 'font-semibold' : ''}`}
                   >
-                    {chat.lastMessage || "No messages yet"}
+                    {chat.lastMessage || 'No messages yet'}
                   </p>
                 </div>
               </div>

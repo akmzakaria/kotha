@@ -165,10 +165,13 @@ export const getOrCreateChat = async (currentUserId: string, otherUserId: string
   return data.chatId;
 };
 
-export const getUserChats = async (userId: string): Promise<ChatRoom[]> => {
+export const getUserChats = async (userId: string, forceRefresh = false): Promise<ChatRoom[]> => {
   const cacheKey = `chats_${userId}`;
-  const cached = getCache<ChatRoom[]>(cacheKey);
-  if (cached) return cached;
+  
+  if (!forceRefresh) {
+    const cached = getCache<ChatRoom[]>(cacheKey);
+    if (cached) return cached;
+  }
   
   const response = await fetch(`/api/chats?userId=${encodeURIComponent(userId)}`);
   if (!response.ok) return [];

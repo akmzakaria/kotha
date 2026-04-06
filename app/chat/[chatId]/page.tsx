@@ -190,7 +190,7 @@ export default function ChatPage() {
       } catch (error) {
         console.error('Error polling messages:', error)
       }
-    }, 2000)
+    }, 3000)
 
     return () => clearInterval(interval)
   }, [chatId, user, otherUserId])
