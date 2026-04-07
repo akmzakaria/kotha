@@ -2,6 +2,8 @@
 
 A real-time chat application built with Next.js, Firebase Authentication, and MongoDB.
 
+Live link: https://kothaa.vercel.app
+
 ## Features
 
 - User authentication with Google Sign-In (Firebase Auth)
