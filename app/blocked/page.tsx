@@ -11,6 +11,7 @@ export default function BlockedUsersPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [blockedUsers, setBlockedUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -21,10 +22,13 @@ export default function BlockedUsersPage() {
   const fetchBlockedUsers = async () => {
     if (!user) return;
     try {
+      setLoading(true);
       const users = await getBlockedUsers(user.uid);
       setBlockedUsers(users);
     } catch (error) {
       console.error("Error fetching blocked users:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,8 +43,6 @@ export default function BlockedUsersPage() {
   const filteredBlocked = blockedUsers.filter((blockedUser) => {
     return blockedUser?.displayName.toLowerCase().includes(searchQuery.toLowerCase());
   });
-
-  const showSkeleton = blockedUsers.length === 0;
 
   return (
     <div className="h-full overflow-y-auto flex flex-col">
@@ -68,7 +70,7 @@ export default function BlockedUsersPage() {
 
       <div className="flex-1 px-4 md:px-6 pb-4 space-y-2">
       
-      {showSkeleton ? (
+      {loading ? (
         Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="flex items-center rounded-xl p-2 gap-3 animate-pulse">
             <div className="w-[50px] h-[50px] rounded-full bg-base-300" />

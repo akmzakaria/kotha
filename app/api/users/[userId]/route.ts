@@ -18,7 +18,7 @@ export async function PATCH(
     const updateQuery: any = {};
 
     // Status update
-    if (status && ["online", "offline", "away"].includes(status)) {
+    if (status && ["online", "offline"].includes(status)) {
       updateQuery.status = status;
       updateQuery.lastSeen = new Date();
     }

@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true },
     profileImage: { type: String, default: "/favicon.ico" },
     bio: { type: String, default: "" },
-    status: { type: String, enum: ["online", "offline", "away"], default: "offline" },
+    status: { type: String, enum: ["online", "offline"], default: "offline" },
     lastSeen: { type: Date, default: Date.now },
     friends: { type: [String], default: [] },
     blocked: { type: [String], default: [] },

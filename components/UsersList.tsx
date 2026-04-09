@@ -129,7 +129,6 @@ export default function UsersList() {
 
   const statusColors: Record<string, string> = {
     online: "bg-green-500",
-    away: "bg-yellow-500",
     offline: "bg-gray-500",
   };
 

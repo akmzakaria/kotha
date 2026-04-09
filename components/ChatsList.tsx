@@ -26,7 +26,7 @@ export default function ChatsList() {
     }
     return []
   })
-  const [userStatuses, setUserStatuses] = useState<Record<string, 'online' | 'offline' | 'away'>>(
+  const [userStatuses, setUserStatuses] = useState<Record<string, 'online' | 'offline'>>(
     {}
   )
   const [searchOpen, setSearchOpen] = useState(false)
@@ -54,7 +54,7 @@ export default function ChatsList() {
         }
 
         // Fetch user statuses
-        const statuses: Record<string, 'online' | 'offline' | 'away'> = {}
+        const statuses: Record<string, 'online' | 'offline'> = {}
         await Promise.all(
           sortedChats.map(async (chat) => {
             const otherUserId = chat.participants.find((id) => id !== user.uid)
@@ -207,9 +207,7 @@ export default function ChatsList() {
                     className={`absolute bottom-0 right-0 w-3 h-3 ${
                       userStatus === 'online'
                         ? 'bg-green-500'
-                        : userStatus === 'away'
-                          ? 'bg-yellow-500'
-                          : 'bg-gray-500'
+                        : 'bg-gray-500'
                     } rounded-full border-2 border-base-100`}
                   />
                 </div>

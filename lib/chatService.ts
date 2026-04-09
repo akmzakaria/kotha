@@ -33,7 +33,7 @@ export interface UserProfile {
   email: string;
   profileImage: string;
   bio: string;
-  status: "online" | "offline" | "away";
+  status: "online" | "offline";
   lastSeen: Date;
   friends: string[];
   blocked: string[];
@@ -236,7 +236,7 @@ export const getChatDetails = async (chatId: string) => {
   return response.json();
 };
 
-export const updateUserStatus = async (userId: string, status: "online" | "offline" | "away") => {
+export const updateUserStatus = async (userId: string, status: "online" | "offline") => {
   await fetch(`/api/users/${encodeURIComponent(userId)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

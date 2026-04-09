@@ -41,7 +41,7 @@ export default function ChatPage() {
         try {
           return JSON.parse(cached).map((m: any) => ({
             ...m,
-            timestamp: new Date(m.timestamp)
+            timestamp: new Date(m.timestamp),
           }))
         } catch {
           return []
@@ -54,7 +54,7 @@ export default function ChatPage() {
   const [otherUserName, setOtherUserName] = useState('')
   const [otherUserImage, setOtherUserImage] = useState('/favicon.ico')
   const [otherUserId, setOtherUserId] = useState('')
-  const [otherUserStatus, setOtherUserStatus] = useState<'online' | 'offline' | 'away'>('offline')
+  const [otherUserStatus, setOtherUserStatus] = useState<'online' | 'offline'>('offline')
   const [isBlocked, setIsBlocked] = useState(false)
   const [isFriend, setIsFriend] = useState(true)
   const [sending, setSending] = useState(false)
@@ -304,7 +304,13 @@ export default function ChatPage() {
     setReplyingTo(null)
 
     try {
-      const saved = await sendMessage(chatId, user.uid, user.displayName || 'Anonymous', text, replyToId)
+      const saved = await sendMessage(
+        chatId,
+        user.uid,
+        user.displayName || 'Anonymous',
+        text,
+        replyToId
+      )
       // Replace optimistic message with real one
       setMessages((prev) => {
         const withoutOptimistic = prev.filter((m) => m.id !== optimisticId)
@@ -411,8 +417,8 @@ export default function ChatPage() {
       return
     }
     const results = messages
-      .filter(m => !m.deleted && m.text.toLowerCase().includes(query.toLowerCase()))
-      .map(m => m.id)
+      .filter((m) => !m.deleted && m.text.toLowerCase().includes(query.toLowerCase()))
+      .map((m) => m.id)
     setSearchResults(results)
     setCurrentSearchIndex(results.length > 0 ? 0 : -1)
     if (results.length > 0) {
@@ -451,14 +457,23 @@ export default function ChatPage() {
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text
     const parts = text.split(new RegExp(`(${query})`, 'gi'))
-    return parts.map((part, i) => 
-      part.toLowerCase() === query.toLowerCase() 
-        ? <mark key={i} className="bg-yellow-300 text-black">{part}</mark>
-        : part
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark key={i} className="bg-yellow-300 text-black">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
     )
   }
 
-  const showSkeleton = messages.length === 0 && !otherUserName && typeof window !== 'undefined' && !localStorage.getItem(`chat_${chatId}`) && !localStorage.getItem(`chat_details_${chatId}`)
+  const showSkeleton =
+    messages.length === 0 &&
+    !otherUserName &&
+    typeof window !== 'undefined' &&
+    !localStorage.getItem(`chat_${chatId}`) &&
+    !localStorage.getItem(`chat_details_${chatId}`)
 
   return (
     <div
@@ -511,21 +526,25 @@ export default function ChatPage() {
                   }}
                 />
               ) : (
-                <svg 
-                  className="w-6 h-6 text-base-content/50 cursor-pointer" 
-                  fill="currentColor" 
+                <svg
+                  className="w-6 h-6 text-base-content/50 cursor-pointer"
+                  fill="currentColor"
                   viewBox="0 0 24 24"
                   onClick={(e) => {
                     e.stopPropagation()
                     router.push(`/user/${otherUserId}`)
                   }}
                 >
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                 </svg>
               )}
-              <div className={`absolute bottom-0 right-0 w-3 h-3 ${
-                otherUserStatus === "online" ? "bg-green-500" : otherUserStatus === "away" ? "bg-yellow-500" : "bg-gray-500"
-              } rounded-full border-2 border-base-200`} />
+              <div
+                className={`absolute bottom-0 right-0 w-3 h-3 ${
+                  otherUserStatus === 'online'
+                    ? 'bg-green-500'
+                    : 'bg-gray-500'
+                } rounded-full border-2 border-base-200`}
+              />
             </div>
             <div className="flex-1">
               <h2 className="font-semibold text-base-content">{otherUserName}</h2>
@@ -534,9 +553,7 @@ export default function ChatPage() {
                   ? 'typing...'
                   : otherUserStatus === 'online'
                     ? 'Online'
-                    : otherUserStatus === 'away'
-                      ? 'Away'
-                      : 'Offline'}
+                    : 'Offline'}
               </p>
             </div>
           </>
@@ -627,7 +644,12 @@ export default function ChatPage() {
                 title="Previous"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 15l7-7 7 7"
+                  />
                 </svg>
               </button>
               <span className="text-xs text-base-content/70 whitespace-nowrap shrink-0">
@@ -639,7 +661,12 @@ export default function ChatPage() {
                 title="Next"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
             </>
@@ -650,7 +677,12 @@ export default function ChatPage() {
             title="Close"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -715,7 +747,11 @@ export default function ChatPage() {
               })
             }
             return (
-              <div key={message.id} id={`msg-${message.id}`} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${searchResults.includes(message.id) && searchResults[currentSearchIndex] === message.id ? 'bg-primary/10 -mx-4 px-4 py-2' : ''}`}>
+              <div
+                key={message.id}
+                id={`msg-${message.id}`}
+                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${searchResults.includes(message.id) && searchResults[currentSearchIndex] === message.id ? 'bg-primary/10 -mx-4 px-4 py-2' : ''}`}
+              >
                 <div className="relative group max-w-xs md:max-w-md break-words">
                   {/* Three-dot menu trigger */}
                   {!message.id.startsWith('optimistic-') && !isDeleted && (
@@ -738,7 +774,9 @@ export default function ChatPage() {
                         </svg>
                       </button>
                       {menuMsgId === message.id && (
-                        <div className={`absolute ${isOwn ? 'right-full mr-2' : 'left-full ml-2'} top-0 bg-base-200 border border-base-300 rounded-lg shadow-lg z-50 min-w-[100px]`}>
+                        <div
+                          className={`absolute ${isOwn ? 'right-full mr-2' : 'left-full ml-2'} top-0 bg-base-200 border border-base-300 rounded-lg shadow-lg z-50 min-w-[100px]`}
+                        >
                           <button
                             onClick={() => {
                               setReplyingTo(message)
@@ -773,13 +811,14 @@ export default function ChatPage() {
                               onClick={() => {
                                 showConfirm({
                                   title: 'Hide Message',
-                                  message: 'Are you sure you want to hide this message? It will only be hidden for you.',
+                                  message:
+                                    'Are you sure you want to hide this message? It will only be hidden for you.',
                                   confirmText: 'Hide',
                                   onConfirm: async () => {
                                     await hideMessage(message.id, user!.uid)
-                                    setMessages(prev => prev.filter(m => m.id !== message.id))
+                                    setMessages((prev) => prev.filter((m) => m.id !== message.id))
                                     setMenuMsgId(null)
-                                  }
+                                  },
                                 })
                               }}
                               className="block w-full text-left px-3 py-2 hover:bg-base-300 text-sm text-base-content transition-colors"
@@ -834,40 +873,64 @@ export default function ChatPage() {
                         onClick={(e) => {
                           e.stopPropagation()
                           // Mobile only: click to open menu
-                          if (window.innerWidth < 768 && !message.id.startsWith('optimistic-') && !isDeleted) {
+                          if (
+                            window.innerWidth < 768 &&
+                            !message.id.startsWith('optimistic-') &&
+                            !isDeleted
+                          ) {
                             setMenuMsgId(menuMsgId === message.id ? null : message.id)
                           }
                         }}
                       >
                         {message.replyTo && (
-                          <div 
+                          <div
                             className={`mb-2 pb-2 border-l-2 pl-2 text-xs opacity-70 cursor-pointer hover:opacity-100 ${isOwn ? 'border-primary-content' : 'border-base-content'}`}
                             onClick={(e) => {
                               e.stopPropagation()
-                              const repliedMsgElement = document.getElementById(`msg-${message.replyTo}`)
+                              const repliedMsgElement = document.getElementById(
+                                `msg-${message.replyTo}`
+                              )
                               if (repliedMsgElement) {
-                                repliedMsgElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                                repliedMsgElement.classList.add('bg-primary/10', '-mx-4', 'px-4', 'py-2')
-                                setTimeout(() => repliedMsgElement.classList.remove('bg-primary/10', '-mx-4', 'px-4', 'py-2'), 5000)
+                                repliedMsgElement.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'center',
+                                })
+                                repliedMsgElement.classList.add(
+                                  'bg-primary/10',
+                                  '-mx-4',
+                                  'px-4',
+                                  'py-2'
+                                )
+                                setTimeout(
+                                  () =>
+                                    repliedMsgElement.classList.remove(
+                                      'bg-primary/10',
+                                      '-mx-4',
+                                      'px-4',
+                                      'py-2'
+                                    ),
+                                  5000
+                                )
                               }
                             }}
                           >
                             {(() => {
-                              const repliedMsg = messages.find(m => m.id === message.replyTo)
+                              const repliedMsg = messages.find((m) => m.id === message.replyTo)
                               return repliedMsg ? (
                                 <>
                                   <p className="font-semibold">{repliedMsg.senderName}</p>
                                   <p className="truncate">{repliedMsg.text}</p>
                                 </>
-                              ) : <p>Message not found</p>
+                              ) : (
+                                <p>Message not found</p>
+                              )
                             })()}
                           </div>
                         )}
                         <p className="whitespace-pre-wrap break-words">
-                          {searchQuery && searchResults.includes(message.id) 
+                          {searchQuery && searchResults.includes(message.id)
                             ? highlightText(message.text, searchQuery)
-                            : message.text
-                          }
+                            : message.text}
                         </p>
                         <p
                           className={`text-xs mt-1 ${isOwn && !isDeleted ? 'text-primary-content/70' : 'text-base-content/50'}`}
@@ -899,8 +962,18 @@ export default function ChatPage() {
                               }}
                               className="hover:opacity-70 transition-opacity"
                             >
-                              <svg className="w-4 h-4 text-base-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                              <svg
+                                className="w-4 h-4 text-base-content"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                                />
                               </svg>
                             </button>
                             {isOwn && (
@@ -957,19 +1030,30 @@ export default function ChatPage() {
                                   e.stopPropagation()
                                   showConfirm({
                                     title: 'Hide Message',
-                                    message: 'Are you sure you want to hide this message? It will only be hidden for you.',
+                                    message:
+                                      'Are you sure you want to hide this message? It will only be hidden for you.',
                                     confirmText: 'Hide',
                                     onConfirm: async () => {
                                       await hideMessage(message.id, user!.uid)
-                                      setMessages(prev => prev.filter(m => m.id !== message.id))
+                                      setMessages((prev) => prev.filter((m) => m.id !== message.id))
                                       setMenuMsgId(null)
-                                    }
+                                    },
                                   })
                                 }}
                                 className="hover:opacity-70 transition-opacity"
                               >
-                                <svg className="w-4 h-4 text-base-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                <svg
+                                  className="w-4 h-4 text-base-content"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                                  />
                                 </svg>
                               </button>
                             )}
@@ -1015,54 +1099,62 @@ export default function ChatPage() {
               <p className="text-xs text-base-content/70">Replying to {replyingTo.senderName}</p>
               <p className="text-sm text-base-content truncate">{replyingTo.text}</p>
             </div>
-            <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-base-300 rounded-full ml-2">
+            <button
+              onClick={() => setReplyingTo(null)}
+              className="p-1 hover:bg-base-300 rounded-full ml-2"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
         )}
         <form onSubmit={handleSendMessage} className="p-4 flex gap-3 items-end">
-        <textarea
-          value={messageText}
-          onChange={(e) => {
-            setMessageText(e.target.value)
+          <textarea
+            value={messageText}
+            onChange={(e) => {
+              setMessageText(e.target.value)
 
-            // Send typing indicator
-            if (user && e.target.value.trim()) {
-              updateTypingStatus(chatId, user.uid, true)
+              // Send typing indicator
+              if (user && e.target.value.trim()) {
+                updateTypingStatus(chatId, user.uid, true)
 
-              // Clear previous timeout
-              if (typingTimeout) clearTimeout(typingTimeout)
+                // Clear previous timeout
+                if (typingTimeout) clearTimeout(typingTimeout)
 
-              // Stop typing after 3 seconds of inactivity
-              const timeout = setTimeout(() => {
+                // Stop typing after 3 seconds of inactivity
+                const timeout = setTimeout(() => {
+                  updateTypingStatus(chatId, user.uid, false)
+                }, 3000)
+                setTypingTimeout(timeout)
+              } else if (user) {
                 updateTypingStatus(chatId, user.uid, false)
-              }, 3000)
-              setTypingTimeout(timeout)
-            } else if (user) {
-              updateTypingStatus(chatId, user.uid, false)
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              if (user) updateTypingStatus(chatId, user.uid, false)
-              handleSendMessage(e as any)
-            }
-          }}
-          placeholder={isFriend ? 'Type a message...' : 'You must be friends to send messages'}
-          className="flex-1 bg-base-300 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary min-w-0 resize-none min-h-[44px] max-h-[120px]"
-          disabled={sending || !isFriend}
-          rows={1}
-        />
-        <button
-          type="submit"
-          disabled={!messageText.trim() || sending || !isFriend}
-          className="bg-primary hover:bg-primary/80 active:bg-primary/60 text-primary-content disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-lg font-semibold transition-colors shrink-0 h-[44px]"
-        >
-          Send
-        </button>
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                if (user) updateTypingStatus(chatId, user.uid, false)
+                handleSendMessage(e as any)
+              }
+            }}
+            placeholder={isFriend ? 'Type a message...' : 'You must be friends to send messages'}
+            className="flex-1 bg-base-300 text-base-content px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary min-w-0 resize-none min-h-[44px] max-h-[120px]"
+            disabled={sending || !isFriend}
+            rows={1}
+          />
+          <button
+            type="submit"
+            disabled={!messageText.trim() || sending || !isFriend}
+            className="bg-primary hover:bg-primary/80 active:bg-primary/60 text-primary-content disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 rounded-lg font-semibold transition-colors shrink-0 h-[44px]"
+          >
+            Send
+          </button>
         </form>
       </div>
     </div>

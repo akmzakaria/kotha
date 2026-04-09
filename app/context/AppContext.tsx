@@ -34,7 +34,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     { id: "1", name: "AKM Zakaria", avatar: "/favicon.ico", status: "online" },
     { id: "2", name: "John Doe", avatar: "/favicon.ico", status: "offline" },
     { id: "3", name: "Jane Smith", avatar: "/favicon.ico", status: "online" },
-    { id: "4", name: "Mike Johnson", avatar: "/favicon.ico", status: "away" },
+    { id: "4", name: "Mike Johnson", avatar: "/favicon.ico", status: "offline" },
     {
       id: "5",
       name: "Sarah Williams",

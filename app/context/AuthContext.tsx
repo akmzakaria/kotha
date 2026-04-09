@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const handleVisibilityChange = async () => {
       if (document.hidden) {
-        await updateUserStatus(user.uid, "away");
+        await updateUserStatus(user.uid, "offline");
       } else {
         await updateUserStatus(user.uid, "online");
       }

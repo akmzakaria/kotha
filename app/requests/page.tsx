@@ -162,7 +162,7 @@ export default function RequestsPage() {
                   </div>
                 )}
                 <div className={`absolute bottom-0 right-0 w-3 h-3 ${
-                  requester.status === "online" ? "bg-green-500" : requester.status === "away" ? "bg-yellow-500" : "bg-gray-500"
+                  requester.status === "online" ? "bg-green-500" : "bg-gray-500"
                 } rounded-full border-2 border-base-100`} />
               </div>
 
