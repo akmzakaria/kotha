@@ -468,6 +468,31 @@ export default function ChatPage() {
     )
   }
 
+  const formatDateSeparator = (date: Date) => {
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    
+    const msgDate = new Date(date)
+    msgDate.setHours(0, 0, 0, 0)
+    today.setHours(0, 0, 0, 0)
+    yesterday.setHours(0, 0, 0, 0)
+    
+    if (msgDate.getTime() === today.getTime()) return 'Today'
+    if (msgDate.getTime() === yesterday.getTime()) return 'Yesterday'
+    
+    return msgDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  }
+
+  const shouldShowDateSeparator = (currentMsg: Message, prevMsg: Message | null) => {
+    if (!prevMsg) return true
+    const currentDate = new Date(currentMsg.timestamp)
+    const prevDate = new Date(prevMsg.timestamp)
+    currentDate.setHours(0, 0, 0, 0)
+    prevDate.setHours(0, 0, 0, 0)
+    return currentDate.getTime() !== prevDate.getTime()
+  }
+
   const showSkeleton =
     messages.length === 0 &&
     !otherUserName &&
@@ -735,9 +760,12 @@ export default function ChatPage() {
             <p className="text-base-content/50">No messages yet. Start the conversation!</p>
           </div>
         ) : (
-          messages.map((message) => {
+          messages.map((message, index) => {
             const isOwn = message.senderId === user?.uid
             const isDeleted = message.deleted === true
+            const prevMessage = index > 0 ? messages[index - 1] : null
+            const showDateSeparator = shouldShowDateSeparator(message, prevMessage)
+            
             if (message.text === 'This message has been deleted') {
               console.log('Deleted message check:', {
                 id: message.id,
@@ -747,11 +775,18 @@ export default function ChatPage() {
               })
             }
             return (
-              <div
-                key={message.id}
-                id={`msg-${message.id}`}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${searchResults.includes(message.id) && searchResults[currentSearchIndex] === message.id ? 'bg-primary/10 -mx-4 px-4 py-2' : ''}`}
-              >
+              <React.Fragment key={message.id}>
+                {showDateSeparator && (
+                  <div className="flex justify-center my-4">
+                    <div className="bg-base-200 text-base-content/60 text-xs px-3 py-1 rounded-full">
+                      {formatDateSeparator(message.timestamp)}
+                    </div>
+                  </div>
+                )}
+                <div
+                  id={`msg-${message.id}`}
+                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${searchResults.includes(message.id) && searchResults[currentSearchIndex] === message.id ? 'bg-primary/10 -mx-4 px-4 py-2' : ''}`}
+                >
                 <div className="relative group max-w-xs md:max-w-md break-words">
                   {/* Three-dot menu trigger */}
                   {!message.id.startsWith('optimistic-') && !isDeleted && (
@@ -1063,7 +1098,8 @@ export default function ChatPage() {
                   )}
                 </div>
               </div>
-            )
+            </React.Fragment>
+          )
           })
         )}
 
