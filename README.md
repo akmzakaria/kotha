@@ -31,7 +31,7 @@ Live link: https://kothaa.vercel.app
 ### 1. Clone and Install Dependencies
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/akmzakaria/kotha.git
 cd kotha
 npm install
 ```
